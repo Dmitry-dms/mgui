@@ -64,7 +64,9 @@ type TextLine struct {
 	Msg                           string
 }
 
-func (f *Font) CalculateTextBoundsv2(text string, scale float32) (width, height float32, lines []TextLine, chars []CombinedCharInfo) {
+// CalculateTextBounds is only optimized when you draw text top to down.
+// TODO: Create font interface and add it to mGUI
+func (f *Font) CalculateTextBounds(text string, scale float32) (width, height float32, lines []TextLine, chars []CombinedCharInfo) {
 	prevR := rune(-1)
 
 	fontSize := f.XHeight() + 2
@@ -75,7 +77,7 @@ func (f *Font) CalculateTextBoundsv2(text string, scale float32) (width, height 
 
 	var maxDescend, baseline, maxWidth float32
 	linesCounter := 1
-	baseline = scale * float32(fontSize)
+	baseline = scale * fontSize
 	var dx float32 = 0
 	currentLine := TextLine{}
 	currentLine.Text = []CombinedCharInfo{}
@@ -86,7 +88,7 @@ func (f *Font) CalculateTextBoundsv2(text string, scale float32) (width, height 
 	for i, r := range tmp {
 		info := f.GetCharacter(r)
 		if info.Width == 0 {
-			fmt.Println("unknown char")
+			//fmt.Println("unknown char")
 			continue
 		}
 		if prevR >= 0 {
@@ -101,8 +103,10 @@ func (f *Font) CalculateTextBoundsv2(text string, scale float32) (width, height 
 			lines = append(lines, currentLine)
 			dx = 0
 			currentLine.StartY = baseline
-			baseline += float32(fontSize)
-			height += float32(fontSize)
+
+			baseline += fontSize + maxDescend
+			height += fontSize + maxDescend
+
 			currentLine.Text = []CombinedCharInfo{}
 			currentLine.StartX = 0
 			currentLine.Width = 0
@@ -119,22 +123,22 @@ func (f *Font) CalculateTextBoundsv2(text string, scale float32) (width, height 
 				maxDescend = d
 			}
 		}
-		if info.Rune == ' ' {
-			chars[i] = CombinedCharInfo{
-				Char:  *info,
-				Pos:   utils.Vec2{X: xPos, Y: yPos},
-				Width: float32(info.Width),
-			}
-		} else {
-			chars[i] = CombinedCharInfo{
-				Char:  *info,
-				Pos:   utils.Vec2{X: xPos, Y: yPos},
-				Width: float32(info.LeftBearing + info.Width + info.RightBearing),
-			}
+		//if info.Rune == ' ' {
+		//	chars[i] = CombinedCharInfo{
+		//		Char:  *info,
+		//		Pos:   utils.Vec2{X: xPos, Y: yPos},
+		//		Width: float32(info.Width),
+		//	}
+		//} else {
+		chars[i] = CombinedCharInfo{
+			Char:  *info,
+			Pos:   utils.Vec2{X: xPos, Y: yPos},
+			Width: float32(info.LeftBearing + info.Width + info.RightBearing),
 		}
+		//}
 		currentLine.Text = append(currentLine.Text, chars[i])
 		currentLine.Msg += string(r)
-		//pos[i] = utils.Vec2{X: xPos, Y: yPos}
+
 		dx += float32(info.Width) * scale
 		if r != ' ' {
 			dx += float32(info.RightBearing)
@@ -152,90 +156,6 @@ func (f *Font) CalculateTextBoundsv2(text string, scale float32) (width, height 
 		}
 	}
 	lines = append(lines, currentLine)
-	height += maxDescend
-	width = maxWidth
-	return
-}
-
-// CalculateTextBounds is only optimized when you draw text top to down.
-// TODO: Create font interface and add it to mGUI
-func (f *Font) CalculateTextBounds(text string, scale float32) (width, height float32, chars []CombinedCharInfo) {
-	prevR := rune(-1)
-
-	fontSize := f.XHeight() + 2
-	height = scale * float32(fontSize)
-	tmp := []rune(text)
-	chars = make([]CombinedCharInfo, len(tmp))
-
-	var maxDescend, baseline, maxWidth float32
-	linesCounter := 1
-	baseline = scale * float32(fontSize)
-	var dx float32 = 0
-	for i, r := range tmp {
-		info := f.GetCharacter(r)
-		if info.Width == 0 {
-			fmt.Println("unknown char")
-			continue
-		}
-		if prevR >= 0 {
-			kern := f.Face.Kern(prevR, r).Ceil()
-			dx += float32(kern)
-		}
-		if r != ' ' {
-			dx += float32(info.LeftBearing)
-		}
-		if r == '\n' {
-			linesCounter++
-			dx = 0
-			height += float32(fontSize)
-			baseline += float32(fontSize)
-			prevR = rune(-1)
-			//chars[i] = CombinedCharInfo{
-			//	Char: *info,
-			//	//Pos:   utils.Vec2{X: xPos, Y: yPos},
-			//	//Width: float32(info.Width),
-			//}
-			continue
-		}
-		xPos := dx
-		yPos := baseline
-		if info.Descend != 0 {
-			d := float32(info.Descend) * scale
-			yPos += d
-			if d > maxDescend {
-				maxDescend = d
-			}
-		}
-		if info.Rune == ' ' {
-			chars[i] = CombinedCharInfo{
-				Char:  *info,
-				Pos:   utils.Vec2{X: xPos, Y: yPos},
-				Width: float32(info.Width),
-			}
-		} else {
-			chars[i] = CombinedCharInfo{
-				Char:  *info,
-				Pos:   utils.Vec2{X: xPos, Y: yPos},
-				Width: float32(info.LeftBearing + info.Width + info.RightBearing),
-			}
-		}
-
-		//pos[i] = utils.Vec2{X: xPos, Y: yPos}
-		dx += float32(info.Width) * scale
-		if r != ' ' {
-			dx += float32(info.RightBearing)
-		}
-
-		prevR = r
-		width = dx
-		if linesCounter > 1 {
-			if width > maxWidth {
-				maxWidth = width
-			}
-		} else {
-			maxWidth = width
-		}
-	}
 	height += maxDescend
 	width = maxWidth
 	return

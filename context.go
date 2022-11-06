@@ -11,10 +11,13 @@ import (
 	"github.com/Dmitry-dms/mgui/widgets"
 )
 
-var UiCtx *UiContext
+var uiCtx *UiContext
 
 func init() {
-	UiCtx = NewContext(nil)
+	uiCtx = NewContext(nil)
+}
+func ctx() *UiContext {
+	return uiCtx
 }
 
 type UiContext struct {
@@ -50,6 +53,7 @@ type UiContext struct {
 	PriorWindow       *Window
 	HoveredWindow     *Window
 	LastHoveredWindow *Window
+	WindowCounter     int // Shows how much active windows on the screen
 
 	displaySize [2]float32
 
@@ -102,14 +106,28 @@ func NewContext(frontRenderer UiRenderer) *UiContext {
 	return &c
 }
 
-func (c *UiContext) UploadFont(path string, size int, dpi float32, from int, to int) (*fonts.Font, *image.RGBA) {
+func UploadFont(path string, size int, dpi float32, from int, to int) (*fonts.Font, *image.RGBA) {
+	c := ctx()
 	f, data := fonts.NewFont(path, size, dpi, from, to)
 	c.font = f
 	return f, data
 }
 
-func (c *UiContext) Initialize(frontRenderer UiRenderer) {
+func AddRenderer(frontRenderer UiRenderer) {
+	c := ctx()
 	c.renderer = frontRenderer
+}
+
+func SetChangeCursorFunc(f func(c CursorType)) {
+	c := ctx()
+	c.io.SetCursor = f
+}
+
+func (c *UiContext) getPeekWindow() *Window {
+	if c.windowStack.Length() != 0 {
+		return c.windowStack.Peek()
+	}
+	return nil
 }
 
 func (c *UiContext) dragBehaviorInWindow(rect utils.Rect, captured *bool) {
@@ -149,16 +167,18 @@ func (c *UiContext) GetWidget(id string) (widgets.Widget, bool) {
 	return c.widgetsCache.Get(id)
 }
 
-func (c *UiContext) Io() *Io {
+func GetIo() *Io {
+	c := ctx()
 	return c.io
 }
 
-func (c *UiContext) NewFrame(displaySize [2]float32) {
+func NewFrame(displaySize [2]float32) {
+	c := ctx()
 	c.UpdateMouseInputs()
 
 	c.renderer.NewFrame()
 
-	c.Io().SetDisplaySize(displaySize[0], displaySize[1])
+	c.io.SetDisplaySize(displaySize[0], displaySize[1])
 
 }
 func (c *UiContext) pushWindowFront(w *Window) {
@@ -211,7 +231,7 @@ func (c *UiContext) findHoveredWindow() {
 
 func (c *UiContext) UpdateMouseInputs() {
 
-	io := c.Io()
+	io := c.io
 
 	if io.IsMousePosValid(&io.MousePos) && io.IsMousePosValid(&io.MousePosPrev) {
 		io.MouseDelta = io.MousePos.Sub(io.MousePosPrev)
@@ -287,8 +307,11 @@ func copyWindows(w []*Window) []*Window {
 
 var lastWinL = 0
 
-func (c *UiContext) EndFrame(size [2]float32) {
-
+func EndFrame(size [2]float32) {
+	c := ctx()
+	if c.WindowCounter == 0 {
+		return
+	}
 	// Если количество окон не изменилось, в копировании нет нужды
 	if lastWinL != len(c.Windows) {
 		c.sortedWindows = copyWindows(c.Windows)
@@ -347,6 +370,7 @@ func (c *UiContext) EndFrame(size [2]float32) {
 	c.io.modPressed = [8]bool{}
 	c.io.KeyPressedThisFrame = false
 
+	c.WindowCounter = 0
 }
 
 type StyleVar4f uint

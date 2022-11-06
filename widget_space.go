@@ -93,8 +93,8 @@ func (ws *WidgetSpace) setScrollY(scrollY float32) {
 func (ws *WidgetSpace) handleMouseDrag() {
 	vB := ws.verticalScrollbar
 	if ws.flags&ShowScrollbar != 0 && ws.isVertScrollShown {
-		UiCtx.dragBehavior(utils.NewRect(vB.bX, vB.bY, vB.bW, vB.bH), &ws.captured)
-		delta := UiCtx.io.MouseDelta.Y
+		uiCtx.dragBehavior(utils.NewRect(vB.bX, vB.bY, vB.bW, vB.bH), &ws.captured)
+		delta := uiCtx.io.MouseDelta.Y
 		if ws.captured {
 			// Предотвращение неправильного расчета позиции скроллинга при резком перемещении мыши (delta > 70)
 			if ws.H+ws.scrlY+delta > ws.lastVirtualHeight {

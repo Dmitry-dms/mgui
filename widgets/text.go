@@ -108,7 +108,7 @@ func (t *Text) UpdatePosition(pos [4]float32) {
 
 func (t *Text) SetWH(width, height float32) {
 	t.base.boundingBox[2] = width
-	t.base.boundingBox[3] = height + float32(t.Padding)
+	t.base.boundingBox[3] = height //+ float32(t.Padding)
 }
 
 func (t *Text) SetBackGroundColor(clr [4]float32) {

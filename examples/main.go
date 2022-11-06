@@ -19,7 +19,6 @@ func init() {
 	runtime.LockOSThread()
 }
 
-var uiCtx *ui.UiContext
 var window *glfw.Window
 var Width, Height int = 1280, 720
 var steps int = 1
@@ -68,28 +67,26 @@ func main() {
 	// batch.Init()
 	gl.Init()
 
-	uiCtx = ui.UiCtx
-
 	front := NewGlRenderer()
-	uiCtx.Initialize(front)
+	ui.AddRenderer(front)
 	// uiCtx = ui.NewContext(front, cam)
-	uiCtx.Io().SetCursor = setCursor
+	ui.SetChangeCursorFunc(setCursor)
 
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
 	//sheet := sprite_packer.NewSpriteSheet(512, "mgui")
-	////ui.UiCtx.UploadFont("C:/Windows/Fonts/times.ttf", 14)
+	////ui.uiCtx.UploadFont("C:/Windows/Fonts/times.ttf", 14)
 	fontName := "C:/Windows/Fonts/arial.ttf"
 	fontName2 := "C:/Windows/Fonts/times.ttf"
-	f, _ := ui.UiCtx.UploadFont(fontName2, 24, 157.0, 32, 256)
-	f2, _ := ui.UiCtx.UploadFont(fontName, 18, 157.0, 32, 256)
+	f, _ := ui.UploadFont(fontName2, 24, 157.0, 32, 256)
+	f2, _ := ui.UploadFont(fontName, 18, 157.0, 32, 256)
 	//ConvertFontToAtlas(f, sheet, data)
 	//ConvertFontToAtlas(f2, sheet, data2)
 
-	////ui.UiCtx.UploadFont("assets/fonts/rany.otf", 14)
-	////ui.UiCtx.UploadFont("assets/fonts/sans.ttf", 18)
-	////ui.UiCtx.UploadFont("assets/fonts/mono.ttf", 14)
+	////ui.uiCtx.UploadFont("assets/fonts/rany.otf", 14)
+	////ui.uiCtx.UploadFont("assets/fonts/sans.ttf", 18)
+	////ui.uiCtx.UploadFont("assets/fonts/mono.ttf", 14)
 	//mario := openImage("assets/images/mario.png")
 	//goomba := openImage("assets/images/goomba.png")
 	//windowCustom := openImage("assets/images/window_wooden.png")
@@ -165,52 +162,24 @@ func main() {
 	//if err != nil {
 	//	panic(err)
 	//}
-	//tex, _ = tex.Init("assets/images/mario.png")
-	//tex2, _ = tex2.Init("assets/images/goomba.png")
 
-	// fb, err := NewFramebuffer(200, 200)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// var p bool
-	// gl.Enable(gl.SCISSOR_TEST)
 	for !window.ShouldClose() {
 		glfw.PollEvents()
 		gl.ClearColor(1, 1, 1, 1)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT)
 
-		//if uiCtx.Io().KeyPressedThisFrame {
-		//fmt.Println(uiCtx.Io().PressedKey)
-		//}
+		ui.NewFrame([2]float32{float32(Width), float32(Height)})
 
-		uiCtx.NewFrame([2]float32{float32(Width), float32(Height)})
+		firstWindow()
+		//customWindow()
 
-		//firstWindow()
-		customWindow()
-
-		if uiCtx.Io().IsKeyPressed(ui.GuiKey_Space) {
-			//if uiCtx.SelectableText != nil {
-			//	fmt.Println(uiCtx.SelectableText.WidgetId())
-			//} else {
-			//	fmt.Println("nil")
-			//}
-			//fmt.Println(uiCtx.SelectedText)
-			fmt.Println(uiCtx.FocusedTextInput)
-			//fmt.Println(string(uiCtx.SelectedTextStart.Chars[uiCtx.SelectedTextStart.StartInd].Char.Rune),
-			//	string(uiCtx.SelectedTextEnd.Chars[uiCtx.SelectedTextStart.EndInd].Char.Rune))
-			//fmt.Println(uiCtx.SelectedTextStart.WidgetId(), uiCtx.SelectedTextEnd.WidgetId())
-			//fmt.Println()
-			//for _, text := range uiCtx.SelectedTexts {
-			//	fmt.Print(text.WidgetId() + " ")
+		if ui.GetIo().IsKeyPressed(ui.GuiKey_Space) {
+			//fmt.Println(uiCtx.FocusedTextInput)
+			opendW = true
 		}
-		//}
-
 		//secondWindow()
 
-		// fb.Bind()
-		uiCtx.EndFrame([2]float32{float32(Width), float32(Height)})
-		// fb.Unbind()
-		// rend.NewFrame()
+		ui.EndFrame([2]float32{float32(Width), float32(Height)})
 
 		window.SwapBuffers()
 
@@ -231,32 +200,34 @@ var message = "hello \nworld"
 var msg1 = "hello"
 
 func customWindow() {
-	uiCtx.BeginCustomWindow("cstm wnd", 500, 500, 650, 650,
+	ui.BeginCustomWindow("cstm wnd", 500, 500, 650, 650,
 		100, 160, 400, 480,
 		custWnd.TextureId, custWnd.TexCoords, func() {
-			uiCtx.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
-			uiCtx.Text("text-ttp-4", "Обычная", ui.Selectable)
+			ui.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
+			ui.Text("text-ttp-4", "Обычная", ui.Selectable)
 		})
 }
 
+var opendW = true
+
 func firstWindow() {
-	uiCtx.BeginWindow("first wnd")
+	ui.BeginWindow("The first window", &opendW)
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Text("text-ttp-2", "Обычная картинка \nи это то-же 1", ui.Selectable)
 	//uiCtx.Text("text-ttp-3", "Обычная картинка и \nэто то-же 2", ui.Editable)
-	uiCtx.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
-	uiCtx.Text("text-ttp-4", "Обычная", ui.Selectable)
+	ui.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
+	ui.Text("text-ttp-4", "Lorem Ipsum - это текст-\"рыба\", часто \nиспользуемый в печати и вэб-дизайне.", ui.Selectable)
 	//uiCtx.Text("tlorem", "Lorem Ipsum - это текст-\"рыба\", часто \nиспользуемый в печати и вэб-дизайне. Lorem Ipsum является \nстандартной \"рыбой\" для текстов на \nлатинице с начала XVI века.", ui.Selectable)
-	//uiCtx.TextFitted("text-ttp-1", tW, "Lorem Ipsum - это текст-\"рыба\", часто используемый в печати и вэб-дизайне. Lorem Ipsum является стандартной \"рыбой\" для текстов на латинице с начала XVI века.")
-	uiCtx.TextFitted("text-ttваы-1", tW, "Съешь ещё этих мягких французских булочек")
-	uiCtx.Row("slider-row", func() {
-		uiCtx.Slider("slds", &tW, 100, 1200)
-		uiCtx.Text("sl-tex", fmt.Sprint(tW), ui.DefaultTextFlag)
-	})
-	uiCtx.MultiLineTextInput("inputr23", &message)
-	uiCtx.Text("text-ttp-43", "Обычная картинка и это то-же 123", ui.Selectable)
-	uiCtx.TextInput("tinp-121", 300, 50, &msg1)
+
+	ui.TextFitted("text-ttваы-1", tW, "Съешь ещё этих мягких французских булочек")
+	//ui.Row("slider-row", func() {
+	ui.Slider("slds", &tW, 100, 1200)
+	//	ui.Text("sl-tex", fmt.Sprint(tW), ui.DefaultTextFlag)
+	//})
+	//ui.MultiLineTextInput("inputr23", &message)
+	//ui.Text("text-ttp-43", "Обычная картинка и это то-же 123", ui.Selectable)
+	//ui.TextInput("tinp-121", 300, 50, &msg1)
 	//uiCtx.Bezier()
 	//uiCtx.Line(200)
 	//uiCtx.Line(400)
@@ -356,7 +327,7 @@ func firstWindow() {
 	//uiCtx.Image("#im4kjdg464tht", tex)
 	//uiCtx.VSpace("#dfff234")
 
-	uiCtx.EndWindow()
+	ui.EndWindow()
 }
 
 var selection int = 0
@@ -364,51 +335,51 @@ var sle = []string{"Hello", "Как выбирать?", "Белый", "Что-т
 var slCounter float32 = 0
 
 func secondWindow() {
-	uiCtx.BeginWindow("second wnd")
-	uiCtx.Row("row 1dfdf14", func() {
-		uiCtx.Image("#im4", 100, 100, tex.TextureId, tex.TexCoords)
-		uiCtx.Image("#im4", 100, 100, tex.TextureId, tex.TexCoords)
+	ui.BeginWindow("second wnd", &opendW)
+	ui.Row("row 1dfdf14", func() {
+		ui.Image("#im4", 100, 100, tex.TextureId, tex.TexCoords)
+		ui.Image("#im4", 100, 100, tex.TextureId, tex.TexCoords)
 	})
 
 	cl := fmt.Sprintf("%.0f", slCounter)
 	//uiCtx.Text("text-1dff", "The quick brown fox jumps over the lazy dog", 16)
-	uiCtx.Text("text-1dff", "Съешь еще этих мягких", 16)
-	uiCtx.Text("text-1dfhjyf", cl, 16)
-	uiCtx.Slider("slider-1", &slCounter, 0, 255)
+	ui.Text("text-1dff", "Съешь еще этих мягких", 16)
+	ui.Text("text-1dfhjyf", cl, 16)
+	ui.Slider("slider-1", &slCounter, 0, 255)
 
-	uiCtx.Row("row 13214", func() {
-		uiCtx.Image("#im4kjdg464", 100, 100, tex.TextureId, tex.TexCoords)
-		uiCtx.Column("col fdfd", func() {
-			uiCtx.Image("#im76", 100, 100, tex2.TextureId, tex2.TexCoords)
-			uiCtx.Image("#im4", 100, 100, tex.TextureId, tex.TexCoords)
+	ui.Row("row 13214", func() {
+		ui.Image("#im4kjdg464", 100, 100, tex.TextureId, tex.TexCoords)
+		ui.Column("col fdfd", func() {
+			ui.Image("#im76", 100, 100, tex2.TextureId, tex2.TexCoords)
+			ui.Image("#im4", 100, 100, tex.TextureId, tex.TexCoords)
 		})
 
-		uiCtx.Column("col fdfdвава", func() {
-			uiCtx.Button("ASsfdffb")
-			uiCtx.Button("ASsfdffbbb")
+		ui.Column("col fdfdвава", func() {
+			ui.Button("ASsfdffb")
+			ui.Button("ASsfdffbbb")
 		})
 
-		uiCtx.Image("#im4kj", 100, 100, tex.TextureId, tex.TexCoords)
+		ui.Image("#im4kj", 100, 100, tex.TextureId, tex.TexCoords)
 	})
 
-	uiCtx.EndWindow()
+	ui.EndWindow()
 }
 
 func cursorPosCallback(w *glfw.Window, xpos float64, ypos float64) {
-	uiCtx.Io().MousePosCallback(float32(xpos), float32(ypos))
+	ui.GetIo().MousePosCallback(float32(xpos), float32(ypos))
 }
 
 func mouseBtnCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
-	uiCtx.Io().MouseBtnCallback(GlfwMouseKey(button), GlfwAction(action))
+	ui.GetIo().MouseBtnCallback(GlfwMouseKey(button), GlfwAction(action))
 }
 
 func onKey(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 
 	switch action {
 	case glfw.Press:
-		uiCtx.Io().KeyCallback(GlfwKeyToGuiKey(key), GlfwModKey(mods), true)
+		ui.GetIo().KeyCallback(GlfwKeyToGuiKey(key), GlfwModKey(mods), true)
 	case glfw.Release:
-		uiCtx.Io().KeyCallback(GlfwKeyToGuiKey(key), GlfwModKey(mods), false)
+		ui.GetIo().KeyCallback(GlfwKeyToGuiKey(key), GlfwModKey(mods), false)
 	}
 	if key == glfw.KeyEscape && action == glfw.Press {
 		window.SetShouldClose(true)
@@ -416,8 +387,8 @@ func onKey(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, 
 }
 
 func scrollCallback(w *glfw.Window, xoff float64, yoff float64) {
-	uiCtx.Io().ScrollX = xoff
-	uiCtx.Io().ScrollY = yoff
+	ui.GetIo().ScrollX = xoff
+	ui.GetIo().ScrollY = yoff
 }
 func openImage(filepath string) image.Image {
 	infile, err := os.Open(filepath)

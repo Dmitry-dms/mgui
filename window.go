@@ -68,7 +68,7 @@ func NewCustomWindow(x, y, w, h float32) *Window {
 		minW:            200,
 		minH:            50,
 		mainWidgetSpace: newWidgetSpace(fmt.Sprintf("main-widg-space-%s", id), x, y, w, h, Default),
-		buffer:          draw.NewBuffer(UiCtx.Io().DisplaySize),
+		buffer:          draw.NewBuffer(uiCtx.io.DisplaySize),
 		widgSpaces:      make([]*WidgetSpace, 0),
 		delayedWidgets:  []func(){},
 		VisibleTexts:    []*widgets.Text{},
@@ -93,7 +93,7 @@ func NewWindow(x, y, w, h float32) *Window {
 		minW:            200,
 		minH:            50,
 		mainWidgetSpace: newWidgetSpace(fmt.Sprintf("main-widg-space-%s", id), x, y+tb.h, w, h-tb.h, Default),
-		buffer:          draw.NewBuffer(UiCtx.Io().DisplaySize),
+		buffer:          draw.NewBuffer(uiCtx.io.DisplaySize),
 		widgSpaces:      make([]*WidgetSpace, 0),
 		delayedWidgets:  []func(){},
 		VisibleTexts:    []*widgets.Text{},
@@ -108,7 +108,8 @@ const (
 	scrollChange           = 2
 )
 
-func (c *UiContext) BeginCustomWindow(id string, x, y, w, h, wsX, wsY, wsW, wsH float32, texId uint32, textCoords [4]float32, widgFunc func()) {
+func BeginCustomWindow(id string, x, y, w, h, wsX, wsY, wsW, wsH float32, texId uint32, textCoords [4]float32, widgFunc func()) {
+	c := ctx()
 	var wnd *Window
 	wnd, ok := c.windowCache.Get(id)
 	if !ok {
@@ -221,18 +222,24 @@ func (c *UiContext) BeginCustomWindow(id string, x, y, w, h, wsX, wsY, wsW, wsH 
 	wnd.mainWidgetSpace.virtualWidth = 0
 }
 
-func (c *UiContext) BeginWindow(id string) {
-	var wnd *Window
+func BeginWindow(windowName string, opened *bool) {
+	if *opened == false {
+		return
+	}
+	c := ctx()
+	//var wnd *Window
 	var cmdw draw.Window_command
-	wnd, ok := c.windowCache.Get(id)
+	wnd, ok := c.windowCache.Get(windowName)
 	if !ok {
 		r := rand.Intn(500)
 		g := rand.Intn(300)
 		wnd = NewWindow(defx+float32(r), defy+float32(g), defw, defh)
 		c.Windows = append(c.Windows, wnd)
-		wnd.Id = id
-		c.windowCache.Add(id, wnd)
+		wnd.Id = windowName
+		c.windowCache.Add(windowName, wnd)
 	}
+	c.WindowCounter++
+
 	newX := wnd.x
 	newY := wnd.y
 	newH := wnd.h
@@ -311,8 +318,8 @@ func (c *UiContext) BeginWindow(id string) {
 			},
 		}
 	}
-	wnd.mainWidgetSpace.cursorX = wnd.mainWidgetSpace.X + UiCtx.CurrentStyle.LeftMargin
-	wnd.mainWidgetSpace.cursorY = wnd.mainWidgetSpace.Y + UiCtx.CurrentStyle.TopMargin
+	wnd.mainWidgetSpace.cursorX = wnd.mainWidgetSpace.X + uiCtx.CurrentStyle.LeftMargin
+	wnd.mainWidgetSpace.cursorY = wnd.mainWidgetSpace.Y + uiCtx.CurrentStyle.TopMargin
 
 	wnd.mainWidgetSpace.ClipRect = [4]float32{wnd.mainWidgetSpace.X, wnd.mainWidgetSpace.Y,
 		wnd.mainWidgetSpace.W - wnd.mainWidgetSpace.verticalScrollbar.w, wnd.mainWidgetSpace.H}
@@ -331,12 +338,30 @@ func (c *UiContext) BeginWindow(id string) {
 			softGreen, wnd.DefaultClip())
 	}
 	c.windowStack.Push(wnd)
+
+	if wnd.toolbar.h != 0 {
+		b, hovered, clicked := c.button(windowName+"-btn", wnd, wnd.x+wnd.w-25, wnd.y, 25, 25)
+		if hovered {
+			b.SetColor(softGreen)
+		} else {
+			b.SetColor(red)
+		}
+		if clicked {
+			*opened = !*opened
+		}
+		//box := b.BoundingBox()
+		wnd.buffer.CreateRect(wnd.x+wnd.w-25, wnd.y, 25, 25, 0, draw.StraightCorners,
+			0, b.Color(), draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
+		wnd.endWidget(wnd.x+wnd.w-25, wnd.y, false, b)
+		txt, _ := c.textHelper(windowName, wnd.x, wnd.y, 10, windowName, DefaultTextFlag)
+		wnd.buffer.CreateText(wnd.x, wnd.y, txt, *c.font, draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
+	}
 }
 
 var step float32 = 100
 
 func (wnd *Window) widgetSpaceLogic(ws *WidgetSpace, clip func() draw.ClipRectCompose) {
-	c := UiCtx
+	c := uiCtx
 
 	if c.hoverBehavior(wnd, utils.NewRectS(ws.ClipRect)) {
 		c.ActiveWidgetSpaceId = ws.id
@@ -381,7 +406,8 @@ func (c *UiContext) getWidget(id string, f func() widgets.Widget) widgets.Widget
 	return widg
 }
 
-func (c *UiContext) ButtonT(id string, msg string) bool {
+func ButtonT(id string, msg string) bool {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var tBtn *widgets.TextButton
 	var hovered, clicked bool
@@ -402,7 +428,8 @@ func (c *UiContext) ButtonT(id string, msg string) bool {
 	return clicked
 }
 
-func (c *UiContext) Slider(id string, i *float32, min, max float32) {
+func Slider(id string, i *float32, min, max float32) {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var slider *widgets.Slider
 	//var hovered, clicked bool
@@ -528,37 +555,6 @@ func (c *UiContext) FitTextToWidth(x, w float32, msg string) string {
 	return sb.String()
 }
 
-func (c *UiContext) findSelectedText(txt *widgets.Text) bool {
-	for _, text := range c.SelectedTexts {
-		if text == txt {
-			return true
-		}
-	}
-	return false
-}
-func (c *UiContext) addSelectedText(txt *widgets.Text) {
-	//if c.SelectedTextStart != nil {
-	c.SelectedTexts = append(c.SelectedTexts, txt)
-	//}
-}
-func (c *UiContext) removeSelectedText(txt *widgets.Text) {
-	index := 0
-	if len(c.SelectedTexts) == 0 {
-		return
-	}
-	for i, text := range c.SelectedTexts {
-		if text == txt {
-			index = i
-		}
-	}
-	c.SelectedTexts = append(c.SelectedTexts[:index], c.SelectedTexts[index+1:]...)
-}
-func printText(t []fonts.CombinedCharInfo) {
-	for _, info := range t {
-		fmt.Printf("%s ", string(info.Char.Rune))
-	}
-	fmt.Println()
-}
 func insertIntoString2(s string, lineIndx, index int, val string, lines []fonts.TextLine) string {
 	sb := strings.Builder{}
 	sb.Grow(len(s))
@@ -600,16 +596,8 @@ func removeFromString(s string, lineIndx, index int, lines []fonts.TextLine) str
 		} else {
 			for i := 0; i < lineIndx; i++ {
 				realIndx += len(lines[i].Text) + 1
-				fmt.Println(realIndx)
 			}
-
-			//if realIndx > len(lines[lineIndx].Text) {
-			//	realIndx = len(lines[lineIndx].Text)
-			//} else {
-			fmt.Println(realIndx, index)
 			realIndx += index
-			//}
-			//fmt.Println(realIndx)
 		}
 	}
 	index = realIndx
@@ -618,7 +606,7 @@ func removeFromString(s string, lineIndx, index int, lines []fonts.TextLine) str
 	} else if index == len(tmp) {
 		fmt.Println("here")
 	}
-	tmp = append(tmp[:index], tmp[index+1:]...) // Step 1+2
+	tmp = append(tmp[:index], tmp[index+1:]...)
 	return string(tmp)
 }
 
@@ -628,29 +616,51 @@ func (c *UiContext) ClearTextSelection(wnd *Window) {
 	wnd.textRegions = []utils.Rect{}
 }
 
-// TODO: Should text input and text be separated?
-func (c *UiContext) tHelper(id string, x, y, w float32, msg string, flag widgets.TextFlag) (txt *widgets.Text, hovered bool) {
+func (c *UiContext) tHelper2(txt *widgets.Text, msg string, newWidth float32) (hovered bool) {
 	wnd := c.windowStack.Peek()
-	txt = c.getWidget(id, func() widgets.Widget {
-		if flag&widgets.SplitChars != 0 {
-			msg = c.FitTextToWidth(x, w, msg)
-		} else if flag&widgets.SplitWords != 0 {
-			numChars := int(math.Floor(float64(w / c.font.XCharAdvance())))
+	hovered = c.hoverBehavior(wnd, utils.NewRectS(txt.BoundingBox()))
+	if txt.LastWidth != newWidth {
+		fmt.Println(newWidth)
+		if txt.Flag&widgets.SplitChars != 0 {
+			msg = c.FitTextToWidth(txt.BoundingBox()[0], newWidth, msg)
+		} else if txt.Flag&widgets.SplitWords != 0 {
+			numChars := int(math.Floor(float64(newWidth / c.font.XCharAdvance())))
 			msg = wrap(msg, numChars)
 		}
-		width, h, l, chars := c.font.CalculateTextBoundsv2(msg, c.CurrentStyle.FontScale)
+
+		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+		txt.Lines = l
+		txt.Chars = chars
+		txt.Message = msg
+		txt.SetWH(width, h)
+		txt.LastWidth = newWidth
+	}
+	return
+}
+
+func (c *UiContext) tHelper(id string, x, y, w float32, msg string, flag widgets.TextFlag) (txt *widgets.Text, hovered bool) {
+
+	wnd := c.windowStack.Peek()
+	txt = c.getWidget(id, func() widgets.Widget {
+		//if flag&widgets.SplitChars != 0 {
+		//	msg = c.FitTextToWidth(x, w, msg)
+		//} else if flag&widgets.SplitWords != 0 {
+		//	numChars := int(math.Floor(float64(w / c.font.XCharAdvance())))
+		//	msg = wrap(msg, numChars)
+		//}
+		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
 		return widgets.NewText(id, msg, x, y, width, h, chars, l, c.CurrentStyle, flag)
 
 	}).(*widgets.Text)
 	hovered = c.hoverBehavior(wnd, utils.NewRectS(txt.BoundingBox()))
-	if txt.Message != msg {
+	if txt.LastWidth != w {
 		if flag&widgets.SplitChars != 0 {
 			msg = c.FitTextToWidth(x, w, msg)
 		} else if flag&widgets.SplitWords != 0 {
 			numChars := int(math.Floor(float64(w / c.font.XCharAdvance())))
 			msg = wrap(msg, numChars)
 		}
-		width, h, l, chars := c.font.CalculateTextBoundsv2(msg, c.CurrentStyle.FontScale)
+		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
 		txt.Lines = l
 		txt.Chars = chars
 		txt.Message = msg
@@ -659,10 +669,11 @@ func (c *UiContext) tHelper(id string, x, y, w float32, msg string, flag widgets
 	}
 	return
 }
+
 func (c *UiContext) inputTextHelper(id string, x, y, w float32, msg string, inpmsg *string, key GuiKey, flag widgets.TextFlag) (txt *widgets.Text, hovered bool) {
 	wnd := c.windowStack.Peek()
 	txt = c.getWidget(id, func() widgets.Widget {
-		width, h, l, chars := c.font.CalculateTextBoundsv2(*inpmsg, c.CurrentStyle.FontScale)
+		width, h, l, chars := c.font.CalculateTextBounds(*inpmsg, c.CurrentStyle.FontScale)
 		return widgets.NewText(id, *inpmsg, x, y, width, h, chars, l, c.CurrentStyle, flag)
 	}).(*widgets.Text)
 	hovered = c.hoverBehavior(wnd, utils.NewRectS(txt.BoundingBox()))
@@ -698,7 +709,7 @@ func (c *UiContext) inputTextHelper(id string, x, y, w float32, msg string, inpm
 			txt.CursorInd++
 			*inpmsg = tmp
 		}
-		width, h, l, chars := c.font.CalculateTextBoundsv2(*inpmsg, c.CurrentStyle.FontScale)
+		width, h, l, chars := c.font.CalculateTextBounds(*inpmsg, c.CurrentStyle.FontScale)
 		txt.Lines = l
 		txt.Chars = chars
 		txt.SetWH(width, h)
@@ -721,7 +732,8 @@ func (c *UiContext) getTextInput() (string, GuiKey) {
 	return k, key
 }
 
-func (c *UiContext) TextInput(id string, w, h float32, message *string) {
+func TextInput(id string, w, h float32, message *string) {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var txtGl *widgets.Text
 	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
@@ -771,7 +783,8 @@ func (c *UiContext) TextInput(id string, w, h float32, message *string) {
 }
 
 // MultiLineTextInput TODO: Add want input flag
-func (c *UiContext) MultiLineTextInput(id string, message *string) {
+func MultiLineTextInput(id string, message *string) {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var txtGl *widgets.Text
 	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
@@ -823,14 +836,25 @@ func (c *UiContext) MultiLineTextInput(id string, message *string) {
 	wnd.addCursor(ws.W, ws.H)
 }
 
-func (c *UiContext) TextFitted(id string, w float32, msg string) {
-	wnd := c.windowStack.Peek()
-	x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
-	txt, hovered := c.textHelper(id, x, y, w, msg, widgets.SplitWords|widgets.Selectable)
-	if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
-		wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
+func TextFitted(id string, w float32, msg string) {
+	c := ctx()
+	//wnd := c.windowStack.Peek()
+	//x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
+	//txt, hovered := c.textHelper(id, x, y, w, msg, widgets.SplitWords|widgets.Selectable)
+	//if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
+	//	wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
+	//}
+	//y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
+	txt := c.getWidget(id, func() widgets.Widget {
+		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+		return widgets.NewText(id, msg, 0, 0, width, h, chars, l, c.CurrentStyle, widgets.SplitWords|widgets.Selectable)
+	}).(*widgets.Text)
+	wnd, x, y, isRow, out := CalculateWidgetInfo(txt.Width(), txt.Height())
+	//txt.UpdatePosition([4]float32{x, y, txt.Width(), txt.Height()})
+	if out || wnd == nil {
+		return
 	}
-	y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
+	hovered := c.tHelper2(txt, msg, w)
 	wnd.debugDrawS(txt.BoundingBox())
 	if hovered {
 
@@ -844,14 +868,27 @@ func (c *UiContext) TextFitted(id string, w float32, msg string) {
 	wnd.buffer.CreateText(x, y, txt, *c.font, clip)
 }
 
-func (c *UiContext) Text(id string, msg string, flag widgets.TextFlag) {
-	wnd := c.windowStack.Peek()
-	x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
-	txt, hovered := c.textHelper(id, x, y, 0, msg, flag)
-	if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
-		wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
+func Text(id string, msg string, flag widgets.TextFlag) {
+	c := ctx()
+	txt := c.getWidget(id, func() widgets.Widget {
+		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+		return widgets.NewText(id, msg, 0, 0, width, h, chars, l, c.CurrentStyle, flag)
+	}).(*widgets.Text)
+	wnd, x, y, isRow, out := CalculateWidgetInfo(txt.Width(), txt.Height())
+	//txt.UpdatePosition([4]float32{x, y, txt.Width(), txt.Height()})
+	if out || wnd == nil {
+		fmt.Println(txt.BoundingBox())
+		return
 	}
-	y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
+	hovered := c.tHelper2(txt, msg, txt.Width())
+	//wnd := c.windowStack.Peek()
+	//x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
+	//txt, hovered := c.textHelper(id, x, y, 0, msg, flag)
+	//if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
+	//	wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
+	//}
+	//y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
+
 	//wnd.buffer.RoundedBorderRectangle(x, y, txt.Width(), txt.Height(), 30, 15, red, wnd.DefaultClip())
 	if hovered {
 		//txt.SetBackGroundColor(softGreen)
@@ -889,14 +926,42 @@ func (c *UiContext) imageHelper(id string, x, y, w, h float32) (img *widgets.Ima
 	return
 }
 
-func (c *UiContext) Image(id string, w, h float32, texId uint32, texCoords [4]float32) bool {
-	if texId <= 0 {
-		fmt.Println("error")
+func CalculateWidgetInfo(w, h float32) (wnd *Window, x, y float32, isRow, outWindow bool) {
+	c := ctx()
+	wnd = c.getPeekWindow()
+	if wnd == nil {
+		return
+	}
+	x, y, isRow = wnd.currentWidgetSpace.getCursorPosition()
+	if y+h > wnd.y && y <= wnd.y+wnd.h {
+		y += wnd.currentWidgetSpace.resolveRowAlign(h)
+		return
+	} else {
+		outWindow = true
+		return
+	}
+}
+
+// Widget
+// Может рисоваться внутри окна (w,h)->clip.default или на произвольном месте (x,y,w,h)->clip.ignore
+// Если внутри, нужна проверка на сущ. окно и возвращает => (x,y)
+// ImageEX(id,x,y,w,h,tuid,tcoords)
+// Image(id,w,h,tuid,tcoords) -> WidgetInfo() -> ImageEX(x,y)
+// Global.Image(id,x,y,w,h,tuid,tcoords) -> ImageEX(x,y)
+
+// ButtonEx(id,x,y,w,h,tuid,tcoords,clr)
+// Button(id,w,h) -> WidgetInfo() -> ButtonEx(x,y,w,h,0,nil)
+// Global.Button -> ButtonEx
+// ImageButton() -> WidgetInfo() -> ButtonEX(x,y,w,h,1,[4])
+
+// TextEX(id,x,y,w,h,msg,flag)
+
+func Image(id string, w, h float32, texId uint32, texCoords [4]float32) bool {
+	c := ctx()
+	wnd, x, y, isRow, out := CalculateWidgetInfo(w, h)
+	if out || wnd == nil {
 		return false
 	}
-	wnd := c.windowStack.Peek()
-
-	x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
 	img, _, clicked := c.imageHelper(id, x, y, w, h)
 
 	clr := img.Color()
@@ -930,7 +995,8 @@ func (w *Window) addDelayedWidget(f func()) {
 	w.delayedWidgets = append(w.delayedWidgets, f)
 }
 
-func (c *UiContext) VSpace(id string) {
+func VSpace(id string) {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var s *widgets.VSpace
 	x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
@@ -945,7 +1011,8 @@ func (c *UiContext) VSpace(id string) {
 
 func (c *UiContext) hoverBehavior(wnd *Window, rect utils.Rect) bool {
 	inRect := utils.PointInRect(c.io.MousePos, utils.NewRect(rect.Min.X, rect.Min.Y, rect.Width(), rect.Height()))
-	inWindow := RegionHit(c.io.MousePos.X, c.io.MousePos.Y, wnd.x, wnd.y+wnd.toolbar.h, wnd.w, wnd.h-wnd.toolbar.h)
+	inWindow := RegionHit(c.io.MousePos.X, c.io.MousePos.Y, wnd.x, wnd.y, wnd.w, wnd.h)
+	//inWindow := RegionHit(c.io.MousePos.X, c.io.MousePos.Y, wnd.x, wnd.y+wnd.toolbar.h, wnd.w, wnd.h-wnd.toolbar.h)
 	focusedWidgSpace := false
 	// Accept widget actions only from focused widget space
 	if c.FocusedWidgetSpace != nil {
@@ -956,14 +1023,15 @@ func (c *UiContext) hoverBehavior(wnd *Window, rect utils.Rect) bool {
 	return c.ActiveWindow == wnd && inRect && inWindow && !focusedWidgSpace
 }
 
-func (c *UiContext) TreeNode(id string, msg string, widgFunc func()) bool {
+func TreeNode(id string, msg string, widgFunc func()) bool {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var tBtn *widgets.TextButton
 	var _, hovered bool
 	x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
 
 	tBtn = c.getWidget(id, func() widgets.Widget {
-		w, h, p := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+		w, h, _, p := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
 		return widgets.NewTextButton(id, x, y, w, h, msg, p, widgets.Left, widgets.AllPadding, c.CurrentStyle)
 	}).(*widgets.TextButton)
 
@@ -1000,12 +1068,12 @@ func (c *UiContext) TreeNode(id string, msg string, widgFunc func()) bool {
 
 func (c *UiContext) textButton(id string, wnd *Window, msg string, x, y float32, align widgets.TextAlign) (tBtn *widgets.TextButton, hovered, clicked bool) {
 	tBtn = c.getWidget(id, func() widgets.Widget {
-		w, h, p := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+		w, h, _, p := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
 		return widgets.NewTextButton(id, x, y, w, h, msg, p, align, widgets.AllPadding, c.CurrentStyle)
 	}).(*widgets.TextButton)
 	if msg != tBtn.Message {
 		tBtn.Message = msg
-		w, h, p := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+		w, h, _, p := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
 		tBtn.Text.Chars = p
 		tBtn.SetWH(w, h)
 	}
@@ -1037,7 +1105,8 @@ func (c *UiContext) button(id string, wnd *Window, x, y, w, h float32) (btn *wid
 	return
 }
 
-func (c *UiContext) Button(id string) bool {
+func Button(id string) bool {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var btn *widgets.Button
 	var clicked, hovered bool
@@ -1080,13 +1149,14 @@ func (c *UiContext) setActiveWidget(id string) {
 	c.ActiveWidget = id
 }
 
-func (c *UiContext) Selection(id string, index *int, data []string, texId uint32, texCoords [4]float32) {
+func Selection(id string, index *int, data []string, texId uint32, texCoords [4]float32) {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var s *widgets.Selection
 
 	// Need to use WS because text may not fit into button, so it should be clipped
-	c.SubWidgetSpace(id+"---", 0, 0, Resizable|NotScrollable, func() {
-		c.Row(id+"row--", func() {
+	SubWidgetSpace(id+"---", 0, 0, Resizable|NotScrollable, func() {
+		Row(id+"row--", func() {
 			x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
 			s = c.getWidget(id, func() widgets.Widget {
 				return widgets.NewSelection(id, x, y, 300, 40)
@@ -1115,7 +1185,7 @@ func (c *UiContext) Selection(id string, index *int, data []string, texId uint32
 		})
 	})
 
-	c.ContextMenu(id, IgnoreClipping, func() {
+	ContextMenu(id, IgnoreClipping, func() {
 		for i, datum := range data {
 			x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
 			tbt, _, clicked := c.textButton(datum+"_btnT_"+id, wnd, datum, x, y, widgets.Left)
@@ -1130,7 +1200,8 @@ func (c *UiContext) Selection(id string, index *int, data []string, texId uint32
 	})
 }
 
-func (c *UiContext) ContextMenu(ownerWidgetId string, flag WidgetSpaceFlag, widgFunc func()) {
+func ContextMenu(ownerWidgetId string, flag WidgetSpaceFlag, widgFunc func()) {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var bb [4]float32
 	widg, ok := c.GetWidget(ownerWidgetId)
@@ -1153,7 +1224,8 @@ func (c *UiContext) ContextMenu(ownerWidgetId string, flag WidgetSpaceFlag, widg
 		wnd.addDelayedWidget(f)
 	}
 }
-func (c *UiContext) Tooltip(id string, widgFunc func()) {
+func Tooltip(id string, widgFunc func()) {
+	c := ctx()
 	x, y := c.io.MousePos.X+10, c.io.MousePos.Y+5
 	wnd := c.windowStack.Peek()
 
@@ -1165,7 +1237,8 @@ func (c *UiContext) Tooltip(id string, widgFunc func()) {
 	})
 }
 
-func (c *UiContext) Column(id string, widgFunc func()) {
+func Column(id string, widgFunc func()) {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var hl *widgets.HybridLayout
 	hl, ok := wnd.currentWidgetSpace.getCurrentRow()
@@ -1292,7 +1365,8 @@ func (c *UiContext) subWidgetSpaceHelper(id string, x, y, width, height float32,
 	return c.subWidgetSpaceHelperEx(id, x, y, width, height, 0, 0, transparent, draw.StraightCorners, flags, widgFunc)
 }
 
-func (c *UiContext) SubWidgetSpace(id string, width, height float32, flags WidgetSpaceFlag, widgFunc func()) {
+func SubWidgetSpace(id string, width, height float32, flags WidgetSpaceFlag, widgFunc func()) {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var ws *WidgetSpace
 
@@ -1303,7 +1377,8 @@ func (c *UiContext) SubWidgetSpace(id string, width, height float32, flags Widge
 	wnd.addCursor(ws.W, ws.H)
 }
 
-func (c *UiContext) TabItem(name string, widgFunc func()) {
+func TabItem(name string, widgFunc func()) {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var tb *widgets.TabBar
 	tb, ok := wnd.currentWidgetSpace.getCurrentTabBar()
@@ -1323,7 +1398,8 @@ func (c *UiContext) TabItem(name string, widgFunc func()) {
 		tb.SetWidth(ws.W)
 	}
 }
-func (c *UiContext) TabBar(id string, widgFunc func()) {
+func TabBar(id string, widgFunc func()) {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var tab *widgets.TabBar
 	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
@@ -1336,7 +1412,7 @@ func (c *UiContext) TabBar(id string, widgFunc func()) {
 	ws := c.subWidgetSpaceHelper(id, x, y, 0, 0, Resizable|NotScrollable, func() {
 		//cr := wnd.currentWidgetSpace
 		//wnd.buffer.CreateRect(cr.X, cr.Y, cr.W, cr.H, 10, draw.AllRounded, 0, softGreen, wnd.DefaultClip())
-		c.Row("rowds", func() {
+		Row("rowds", func() {
 			row, _ := wnd.currentWidgetSpace.getCurrentRow()
 			wnd.buffer.CreateRect(row.X, row.Y, row.Width(), row.Height(), 10, draw.AllRounded, 0, transparent, wnd.DefaultClip())
 			for i, item := range tab.Bars {
@@ -1396,7 +1472,8 @@ func (c *UiContext) TabBar(id string, widgFunc func()) {
 	wnd.currentWidgetSpace.AddVirtualWH(ws.W, ws.H)
 }
 
-func (c *UiContext) Row(id string, widgFunc func()) {
+func Row(id string, widgFunc func()) {
+	c := ctx()
 	wnd := c.windowStack.Peek()
 	var row *widgets.HybridLayout
 	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
@@ -1650,9 +1727,12 @@ func (c *UiContext) findTextRegion(txt *widgets.Text, startLine, endLine, startI
 	return results, msg
 }
 
-func (c *UiContext) EndWindow() {
-
-	wnd := c.windowStack.Peek()
+func EndWindow() {
+	c := ctx()
+	wnd := c.getPeekWindow()
+	if wnd == nil {
+		return
+	}
 
 	c.solveTextSelection(wnd)
 	count := 0
