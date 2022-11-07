@@ -572,7 +572,6 @@ func insertIntoString2(s string, lineIndx, index int, val string, lines []fonts.
 		}
 	}
 	index = realIndx
-	fmt.Println("REAL INDEX = ", index)
 
 	for i, _ := range tmp[:realIndx] {
 		sb.WriteString(string(tmp[i]))
@@ -874,12 +873,11 @@ func Text(id string, msg string, flag widgets.TextFlag) {
 		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
 		return widgets.NewText(id, msg, 0, 0, width, h, chars, l, c.CurrentStyle, flag)
 	}).(*widgets.Text)
-	wnd, x, y, isRow, out := CalculateWidgetInfo(txt.Width(), txt.Height())
+	wnd, x, y, isRow, _ := CalculateWidgetInfo(txt.Width(), txt.Height())
 	//txt.UpdatePosition([4]float32{x, y, txt.Width(), txt.Height()})
-	if out || wnd == nil {
-		fmt.Println(txt.BoundingBox())
-		return
-	}
+	//if out || wnd == nil {
+	//	return
+	//}
 	hovered := c.tHelper2(txt, msg, txt.Width())
 	//wnd := c.windowStack.Peek()
 	//x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
@@ -916,8 +914,8 @@ func (c *UiContext) imageHelper(id string, x, y, w, h float32) (img *widgets.Ima
 		img = widgets.NewImage(id, x, y, w, h, whiteColor)
 		return img
 	}).(*widgets.Image)
+	hovered = c.hoverBehavior(wnd, utils.NewRectS(img.BoundingBox()))
 	{
-		hovered := c.hoverBehavior(wnd, utils.NewRectS(img.BoundingBox()))
 		if hovered {
 			c.setActiveWidget(img.WidgetId())
 		}
@@ -930,6 +928,7 @@ func CalculateWidgetInfo(w, h float32) (wnd *Window, x, y float32, isRow, outWin
 	c := ctx()
 	wnd = c.getPeekWindow()
 	if wnd == nil {
+		outWindow = true
 		return
 	}
 	x, y, isRow = wnd.currentWidgetSpace.getCursorPosition()
@@ -956,12 +955,47 @@ func CalculateWidgetInfo(w, h float32) (wnd *Window, x, y float32, isRow, outWin
 
 // TextEX(id,x,y,w,h,msg,flag)
 
-func Image(id string, w, h float32, texId uint32, texCoords [4]float32) bool {
+func (c *UiContext) ImageEX(id string, x, y, w, h float32) (img *widgets.Image, hovered, clicked bool) {
+	img = c.getWidget(id, func() widgets.Widget {
+		img = widgets.NewImage(id, x, y, w, h, whiteColor)
+		return img
+	}).(*widgets.Image)
+	hovered = utils.PointInRect(c.io.MousePos, utils.NewRectS(img.BoundingBox()))
+
+	if hovered {
+		c.setActiveWidget(img.WidgetId())
+	}
+	clicked = c.io.MouseClicked[0] && hovered
+	return
+}
+func Image2(id string, w, h float32, texId uint32, texCoords [4]float32) bool {
 	c := ctx()
 	wnd, x, y, isRow, out := CalculateWidgetInfo(w, h)
 	if out || wnd == nil {
 		return false
 	}
+	img, _, clicked := c.ImageEX(id, x, y, w, h)
+
+	clip := wnd.endWidget(x, y, isRow, img)
+	wnd.buffer.CreateTexturedRect(x, y, img.Width(), img.Height(), texId, texCoords, img.Color(), clip)
+	return clicked
+}
+func GlobalImage(id string, x, y, w, h float32, texId uint32, texCoords [4]float32) bool {
+	c := ctx()
+
+	img, _, clicked := c.ImageEX(id, x, y, w, h)
+	img.UpdatePosition([4]float32{x, y, w, h})
+
+	//wnd.buffer.CreateTexturedRect(x, y, img.Width(), img.Height(), texId, texCoords, img.Color(), clip)
+	return clicked
+}
+
+func Image(id string, w, h float32, texId uint32, texCoords [4]float32) bool {
+	c := ctx()
+	wnd, x, y, isRow, _ := CalculateWidgetInfo(w, h)
+	//if out || wnd == nil {
+	//	return false
+	//}
 	img, _, clicked := c.imageHelper(id, x, y, w, h)
 
 	clr := img.Color()

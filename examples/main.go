@@ -13,6 +13,7 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"time"
 )
 
 func init() {
@@ -210,19 +211,33 @@ func customWindow() {
 
 var opendW = true
 
+var counter = 0
+var dur int64 = 0
+
 func firstWindow() {
 	ui.BeginWindow("The first window", &opendW)
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Text("text-ttp-2", "Обычная картинка \nи это то-же 1", ui.Selectable)
 	//uiCtx.Text("text-ttp-3", "Обычная картинка и \nэто то-же 2", ui.Editable)
-	ui.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
-	ui.Text("text-ttp-4", "Lorem Ipsum - это текст-\"рыба\", часто \nиспользуемый в печати и вэб-дизайне.", ui.Selectable)
-	//uiCtx.Text("tlorem", "Lorem Ipsum - это текст-\"рыба\", часто \nиспользуемый в печати и вэб-дизайне. Lorem Ipsum является \nстандартной \"рыбой\" для текстов на \nлатинице с начала XVI века.", ui.Selectable)
+	start := time.Now()
+	for i := 0; i < 100; i++ {
+		ui.Image(fmt.Sprint(i)+"img", 100, 100, tex.TextureId, tex.TexCoords)
+		ui.Text(fmt.Sprint(i)+"-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
+	}
+	elapsed := time.Since(start)
+	dur += elapsed.Microseconds()
+	counter++
 
-	ui.TextFitted("text-ttваы-1", tW, "Съешь ещё этих мягких французских булочек")
+	fmt.Printf("Widgets took %d \n", int(dur)/counter)
+	//ui.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
+	//ui.Text("text-ttp-4", "Lorem Ipsum - это текст-\"рыба\", часто \nиспользуемый в печати и вэб-дизайне.", ui.Selectable)
+	//uiCtx.Text("tlorem", "Lorem Ipsum - это текст-\"рыба\", часто \nиспользуемый в печати и вэб-дизайне. Lorem Ipsum является \nстандартной \"рыбой\" для текстов на \nлатинице с начала XVI века.", ui.Selectable)
+	//ui.Button("fd")
+	//ui.ButtonT("ds", "Sas")
+	//ui.TextFitted("text-ttваы-1", tW, "Съешь ещё этих мягких французских булочек")
 	//ui.Row("slider-row", func() {
-	ui.Slider("slds", &tW, 100, 1200)
+	//ui.Slider("slds", &tW, 100, 1200)
 	//	ui.Text("sl-tex", fmt.Sprint(tW), ui.DefaultTextFlag)
 	//})
 	//ui.MultiLineTextInput("inputr23", &message)
