@@ -28,26 +28,6 @@ type baseWidget struct {
 	Updated         bool
 }
 
-func (b *baseWidget) WasUpdated(x, y, w, h float32, clr [4]float32) bool {
-	//fmt.Println(x != b.boundingBox[0], y != b.boundingBox[1], w != b.width(), h != b.height(),
-	//	clr[0] != b.BackgroundColor[0] || clr[1] != b.BackgroundColor[1] ||
-	//		clr[2] != b.BackgroundColor[2], b.Updated)
-	//if x != b.boundingBox[0] || y != b.boundingBox[1] ||
-	//	w != b.width() || h != b.height() ||
-	//	//clr[0] != b.BackgroundColor[0] ||
-	//	//clr[1] != b.BackgroundColor[1] || clr[2] != b.BackgroundColor[2] ||
-	//	//clr[3] != b.BackgroundColor[3] ||
-	//	b.Updated {
-	//	b.Updated = false
-	//	return true
-	//}
-	//if b.Updated {
-	//	b.Updated = false
-	//	return true
-	//}
-	return false
-}
-
 func (b *baseWidget) height() float32 {
 	return b.boundingBox[3]
 }

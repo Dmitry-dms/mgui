@@ -140,6 +140,22 @@ func (ws *WidgetSpace) checkVerScroll() {
 		ws.isVertScrollShown = false
 	}
 }
+func (ws *WidgetSpace) addCursor(w, h float32) {
+	row, ok := ws.getCurrentRow()
+	if !ok {
+		ws.cursorY += h
+	} else {
+		if row.RequireColumn {
+			row.CursorY += h
+			row.UpdateColWidth(w)
+			row.AddColHeight(h)
+		} else {
+			row.CursorX += w
+			row.W += w
+			row.UpdateHeight(h)
+		}
+	}
+}
 
 func (ws *WidgetSpace) AddVirtualHeight(height float32) {
 	ws.virtualHeight += height

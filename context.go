@@ -77,6 +77,8 @@ type UiContext struct {
 
 	//fonts
 	font *fonts.Font
+
+	globalBuffer *draw.CmdBuffer
 }
 
 const (
@@ -102,6 +104,7 @@ func NewContext(frontRenderer UiRenderer) *UiContext {
 		CurrentStyle:   &styles.DefaultStyle,
 		SelectedTexts:  []*widgets.Text{},
 	}
+	c.globalBuffer = draw.NewBuffer(c.io.DisplaySize)
 
 	return &c
 }
@@ -325,6 +328,10 @@ func EndFrame(size [2]float32) {
 	for _, v := range c.sortedWindows {
 		c.renderer.Draw(size, *v.buffer)
 		v.buffer.Clear()
+	}
+	if len(c.globalBuffer.Inf) != 0 {
+		c.renderer.Draw(size, *c.globalBuffer)
+		c.globalBuffer.Clear()
 	}
 
 	// c.renderer.End()

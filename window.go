@@ -617,28 +617,6 @@ func (c *UiContext) ClearTextSelection(wnd *Window) {
 	wnd.textRegions = []utils.Rect{}
 }
 
-func (c *UiContext) tHelper2(txt *widgets.Text, msg string, newWidth float32) (hovered bool) {
-	wnd := c.windowStack.Peek()
-	hovered = c.hoverBehavior(wnd, utils.NewRectS(txt.BoundingBox()))
-	if txt.LastWidth != newWidth {
-		fmt.Println(newWidth)
-		if txt.Flag&widgets.SplitChars != 0 {
-			msg = c.FitTextToWidth(txt.BoundingBox()[0], newWidth, msg)
-		} else if txt.Flag&widgets.SplitWords != 0 {
-			numChars := int(math.Floor(float64(newWidth / c.font.XCharAdvance())))
-			msg = wrap(msg, numChars)
-		}
-
-		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
-		txt.Lines = l
-		txt.Chars = chars
-		txt.Message = msg
-		txt.SetWH(width, h)
-		txt.LastWidth = newWidth
-	}
-	return
-}
-
 func (c *UiContext) tHelper(id string, x, y, w float32, msg string, flag widgets.TextFlag) (txt *widgets.Text, hovered bool) {
 
 	wnd := c.windowStack.Peek()
@@ -855,7 +833,7 @@ func MultiLineTextInput(id string, message *string) {
 //	if out || wnd == nil {
 //		return
 //	}
-//	hovered := c.tHelper2(txt, msg, w)
+//	hovered := c.TextEX(txt, msg, w)
 //	wnd.debugDrawS(txt.BoundingBox())
 //	if hovered {
 //
@@ -880,7 +858,7 @@ func MultiLineTextInput(id string, message *string) {
 //	//if out || wnd == nil {
 //	//	return
 //	//}
-//	hovered := c.tHelper2(txt, msg, txt.Width())
+//	hovered := c.TextEX(txt, msg, txt.Width())
 //	//wnd := c.windowStack.Peek()
 //	//x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
 //	//txt, hovered := c.textHelper(id, x, y, 0, msg, flag)
@@ -923,17 +901,10 @@ func (c *UiContext) imageHelper(id string, x, y, w, h float32, f func() *widgets
 	return
 }
 
-func CalculateWidgetInfo(w, h float32) (wnd *Window, ws *WidgetSpace, x, y float32, isRow, outWindow bool) {
-	c := ctx()
-	wnd = c.getPeekWindow()
-	if wnd == nil {
-		outWindow = true
-		return
-	}
-	ws = wnd.currentWidgetSpace
+func CalculateWidgetInfo(w, h float32, ws *WidgetSpace) (x, y float32, isRow, outWindow bool) {
 	x, y, isRow = ws.getCursorPosition()
-	if y+h > wnd.y && y <= wnd.y+wnd.h {
-		y += wnd.currentWidgetSpace.resolveRowAlign(h)
+	if y+h > ws.Y && y <= ws.Y+ws.H {
+		y += ws.resolveRowAlign(h)
 		return
 	} else {
 		outWindow = true
@@ -955,18 +926,55 @@ func CalculateWidgetInfo(w, h float32) (wnd *Window, ws *WidgetSpace, x, y float
 
 // TextEX(id,x,y,w,h,msg,flag)
 
-func (c *UiContext) ImageEX(id string, x, y, w, h float32, texId uint32, texCoords, clr [4]float32, buff *draw.CmdBuffer, compose draw.ClipRectCompose) (img *widgets.Image, hovered, clicked bool) {
+func (c *UiContext) TextEX(ws *WidgetSpace, id string, msg string, newWidth float32, flag widgets.TextFlag) (txt *widgets.Text, x, y float32, isRow, outOfWs bool) {
+	txt = c.getWidget(id, func() widgets.Widget {
+		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+		txt := widgets.NewText(id, msg, ws.cursorX, ws.cursorY, width, h, chars, l, c.CurrentStyle, flag)
+		txt.Base.Updated = true
+		return txt
+	}).(*widgets.Text)
+	x, y, isRow, outOfWs = CalculateWidgetInfo(txt.Width(), txt.Height(), ws)
+	if outOfWs {
+		ws.addCursor(txt.Width(), txt.Height())
+		if !isRow {
+			ws.AddVirtualWH(txt.Width(), txt.Height())
+		}
+		return
+	}
+	if txt.LastWidth != newWidth {
+		fmt.Println(newWidth)
+		if txt.Flag&widgets.SplitChars != 0 {
+			msg = c.FitTextToWidth(txt.BoundingBox()[0], newWidth, msg)
+		} else if txt.Flag&widgets.SplitWords != 0 {
+			numChars := int(math.Floor(float64(newWidth / c.font.XCharAdvance())))
+			msg = wrap(msg, numChars)
+		}
+
+		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+		txt.Lines = l
+		txt.Chars = chars
+		txt.Message = msg
+		txt.SetWH(width, h)
+		txt.LastWidth = newWidth
+	}
+	return
+}
+func (c *UiContext) ImageEX(ws *WidgetSpace, id string, w, h float32, texId uint32, texCoords, clr [4]float32) (img *widgets.Image, x, y float32, isRow, outOfWs bool) {
 	img = c.getWidget(id, func() widgets.Widget {
-		img2 := widgets.NewImage2(id, x, y, w, h, texId, texCoords, clr)
-		img2.LastVert, img2.LastInd, img2.LastVertCount, img2.Last =
-			buff.CreateTexturedRect2(x, y, w, h, texId, texCoords, clr, compose)
+		img2 := widgets.NewImage2(id, ws.cursorX, ws.cursorY, w, h, texId, texCoords, clr)
+		img2.Updated = true
 		return img2
 	}).(*widgets.Image)
-	hovered = utils.PointInRect(c.io.MousePos, utils.NewRectS(img.BoundingBox()))
-	if hovered {
-		c.setActiveWidget(img.WidgetId())
+
+	x, y, isRow, outOfWs = CalculateWidgetInfo(w, h, ws)
+	if outOfWs {
+		ws.addCursor(w, h)
+		if !isRow {
+			ws.AddVirtualWH(w, h)
+		}
+		outOfWs = true
+		return
 	}
-	clicked = c.io.MouseClicked[0] && hovered
 	return
 }
 
@@ -991,67 +999,120 @@ func (c *UiContext) DrawImage(x, y float32, img *widgets.Image, buffer *draw.Cmd
 	}
 	buffer.SeparateBuffer(img.TexId, clip)
 }
+
+func GlobalImage(id string, x, y, w, h float32, texId uint32, texCoords [4]float32) bool {
+	c := ctx()
+	var ws *WidgetSpace
+	var clicked bool
+	ws = c.subWidgetSpaceHelper("wsp-"+id, x, y, w, h, IgnoreClipping, func() {
+		img, x, y, isRow, out := c.ImageEX(ws, id, w, h, texId, texCoords, whiteColor)
+		if out {
+			return
+		}
+		hovered := utils.PointInRect(c.io.MousePos, utils.NewRectS(img.BoundingBox()))
+		clicked = hovered && c.io.MouseClicked[0]
+		if hovered {
+			img.SetColor(red)
+		} else {
+			img.SetColor(whiteColor)
+		}
+		ws.UpdateWidgetPosition(x, y, isRow, img)
+
+		c.DrawImage(x, y, img, c.globalBuffer, ws.Clip())
+	})
+
+	return clicked
+}
+
 func Image(id string, w, h float32, texId uint32, texCoords [4]float32) bool {
 	c := ctx()
-	wnd, _, x, y, isRow, _ := CalculateWidgetInfo(w, h)
-	//if out || wnd == nil {
+
+	wnd := c.getPeekWindow()
+	ws := wnd.currentWidgetSpace
+
+	img, x, y, isRow, out := c.ImageEX(ws, id, w, h, texId, texCoords, whiteColor)
+	if out {
+		return false
+	}
+	//img := c.getWidget(id, func() widgets.Widget {
+	//	img2 := widgets.NewImage2(id, ws.cursorX, ws.cursorY, w, h, texId, texCoords, whiteColor)
+	//	img2.Updated = true
+	//	return img2
+	//}).(*widgets.Image)
+	//
+	//x, y, isRow, out := CalculateWidgetInfo(w, h, ws)
+	//if out {
+	//	ws.addCursor(w, h)
+	//	if !isRow {
+	//		ws.AddVirtualWH(w, h)
+	//	}
 	//	return false
 	//}
 
-	img, hov, clicked := c.ImageEX(id, x, y, w, h, texId, texCoords, whiteColor, wnd.buffer, wnd.DefaultClip())
+	//hov, clicked := c.ImageEX(img)
+	hovered := c.hoverBehavior(wnd, utils.NewRectS(img.BoundingBox()))
+	clicked := hovered && c.io.MouseClicked[0]
+	//img, hov, clicked := c.ImageEX(id, x, y, w, h, texId, texCoords, whiteColor, wnd.buffer, wnd.DefaultClip())
 	//wnd.debugDrawS([4]float32{x, y, w, h})
-	if hov {
+	if hovered {
 		img.SetColor(red)
 	} else {
 		img.SetColor(whiteColor)
 	}
-	c.DrawImage(x, y, img, wnd.buffer, wnd.DefaultClip())
-	wnd.UpdateWidgetPosition(x, y, isRow, img)
+	ws.UpdateWidgetPosition(x, y, isRow, img)
 
-	//wnd.debugDrawS([4]float32{x, y, w, h})
+	c.DrawImage(x, y, img, wnd.buffer, wnd.DefaultClip())
 	return clicked
 }
 
-//func Text(id string, msg string, flag widgets.TextFlag) {
-//	c := ctx()
-//	txt := c.getWidget(id, func() widgets.Widget {
-//		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
-//		return widgets.NewText(id, msg, 0, 0, width, h, chars, l, c.CurrentStyle, flag)
-//	}).(*widgets.Text)
-//	wnd, x, y, isRow, _ := CalculateWidgetInfo(txt.Width(), txt.Height())
-//	//txt.UpdatePosition([4]float32{x, y, txt.Width(), txt.Height()})
-//	//if out || wnd == nil {
-//	//	return
-//	//}
-//	hovered := c.tHelper2(txt, msg, txt.Width())
-//	//wnd := c.windowStack.Peek()
-//	//x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
-//	//txt, hovered := c.textHelper(id, x, y, 0, msg, flag)
-//	//if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
-//	//	wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
-//	//}
-//	//y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
-//
-//	//wnd.buffer.RoundedBorderRectangle(x, y, txt.Width(), txt.Height(), 30, 15, red, wnd.DefaultClip())
-//	if hovered {
-//		//txt.SetBackGroundColor(softGreen)
-//		//txt.CurrentColor = [4]float32{167, 200, 100, 1}
-//	} else {
-//		txt.CurrentColor = whiteColor
-//		txt.SetBackGroundColor(transparent)
-//	}
-//
-//	//txt.CurrentColor = [4]float32{255, 255, 255, 1}
-//
-//	clip := wnd.endWidget(x, y, isRow, txt)
-//
-//	wnd.buffer.CreateText(x, y, txt, *c.font, clip)
-//}
-func (wnd *Window) UpdateWidgetPosition(xPos, yPos float32, isRow bool, w widgets.Widget) {
+func Text(id string, msg string, flag widgets.TextFlag) {
+	c := ctx()
+	wnd := c.getPeekWindow()
+	ws := wnd.currentWidgetSpace
+	//txt := c.getWidget(id, func() widgets.Widget {
+	//	width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+	//	txt := widgets.NewText(id, msg, ws.cursorX, ws.cursorY, width, h, chars, l, c.CurrentStyle, flag)
+	//	txt.Base.Updated = true
+	//	return txt
+	//}).(*widgets.Text)
+	//
+	//x, y, isRow, out := CalculateWidgetInfo(txt.Width(), txt.Height(), ws)
+	//if out {
+	//	ws.addCursor(txt.Width(), txt.Height())
+	//	if !isRow {
+	//		ws.AddVirtualWH(txt.Width(), txt.Height())
+	//	}
+	//	return
+	//}
+	txt, x, y, isRow, out := c.TextEX(ws, id, msg, 0, flag)
+	if out {
+		return
+	}
+
+	hovered := c.hoverBehavior(wnd, utils.NewRectS(txt.BoundingBox()))
+	if hovered {
+		txt.SetTextColor(softGreen)
+	} else {
+		txt.SetTextColor(c.CurrentStyle.TextColor)
+	}
+	ws.UpdateWidgetPosition(x, y, isRow, txt)
+	c.DrawText(x, y, txt, c.font.TextureId, wnd.buffer, wnd.DefaultClip())
+}
+func (c *UiContext) DrawText(x, y float32, txt *widgets.Text, texid uint32, buffer *draw.CmdBuffer, clip draw.ClipRectCompose) {
+	if txt.Base.Updated {
+		txt.Base.LastVert, txt.Base.LastInd, txt.Base.LastVertCount, txt.Base.Last = buffer.CreateText2(x, y, txt, 1, *c.font)
+		buffer.Render2(txt.Base.LastVert, txt.Base.LastInd, txt.Base.LastVertCount, 0)
+		txt.Base.Updated = false
+	} else {
+		buffer.Render2(txt.Base.LastVert, txt.Base.LastInd, txt.Base.LastVertCount, txt.Base.Last)
+	}
+	buffer.SeparateBuffer(texid, clip)
+}
+func (ws *WidgetSpace) UpdateWidgetPosition(xPos, yPos float32, isRow bool, w widgets.Widget) {
 	w.UpdatePosition([4]float32{xPos, yPos, w.Width(), w.Height()})
-	wnd.addCursor(w.Width(), w.Height())
+	ws.addCursor(w.Width(), w.Height())
 	if !isRow {
-		wnd.currentWidgetSpace.AddVirtualWH(w.Width(), w.Height())
+		ws.AddVirtualWH(w.Width(), w.Height())
 	}
 }
 

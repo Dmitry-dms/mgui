@@ -221,22 +221,27 @@ var dur int64 = 0
 var tmer = time.NewTicker(1 * time.Second)
 
 func firstWindow() {
+	//ui.GlobalImage("glob", 200, 200, 100, 100, tex.TextureId, tex.TexCoords)
 	ui.BeginWindow("The first window", &opendW)
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Text("text-ttp-2", "Обычная картинка \nи это то-же 1", ui.Selectable)
 	//uiCtx.Text("text-ttp-3", "Обычная картинка и \nэто то-же 2", ui.Editable)
 	start := time.Now()
-	for i := 0; i < 100; i++ {
-		//fmt.Println(tex.TexCoords)
-		ui.Image(fmt.Sprint(i)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
-		//ui.Text(fmt.Sprint(i)+"-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
-	}
+	ui.SubWidgetSpace("dfd", 100, 100, ui.Default, func() {
+		ui.Image(fmt.Sprint(12)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
+		ui.Text(fmt.Sprint(2131)+"-txt", "dfdgfg - это текст-\"рыба\"", ui.Selectable)
+	})
+	//for i := 0; i < 100; i++ {
+	//	//fmt.Println(tex.TexCoords)
+	//	ui.Image(fmt.Sprint(i)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
+	//	ui.Text(fmt.Sprint(i)+"-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
+	//}
 
 	elapsed := time.Since(start)
 	dur += elapsed.Microseconds()
 	counter++
-	fmt.Printf("Widgets took %d \n", int(dur)/counter)
+	//fmt.Printf("Widgets took %d \n", int(dur)/counter)
 	{
 		//ui.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
 		//ui.Text("text-ttp-4", "Lorem Ipsum - это текст-\"рыба\", часто \nиспользуемый в печати и вэб-дизайне.", ui.Selectable)

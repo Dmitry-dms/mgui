@@ -90,7 +90,15 @@ func (c *CmdBuffer) CreateButtonT(x, y float32, btn *widgets.TextButton, font fo
 	btn.UpdateTextPos(x, y)
 	c.CreateText(btn.Text.BoundingBox()[0], btn.Text.BoundingBox()[1], btn.Text, font, clip)
 }
+func (c *CmdBuffer) CreateText2(x, y float32, txt *widgets.Text, scale float32, font fonts.Font) ([]float32, []int32, int, int) {
 
+	//c.CreateRect(x, y, txt.Width(), txt.Height(), 0, StraightCorners, 0, txt.BackgroundColor(), clip)
+	vert, ind, count := c.Text2(txt, font, x, c.displaySize.Y-y, scale, txt.CurrentColor)
+	return vert, ind, count, c.lastIndc
+	//c.SeparateBuffer(t.Font.TextureId, clip) // don't forget to slice buffer
+	//c.CreateBorderBox(x, y, txt.Width(), txt.Height(), 2, [4]float32{255, 0, 0, 1})
+	//c.SeparateBuffer(font.TextureId, clip)
+}
 func (c *CmdBuffer) CreateText(x, y float32, txt *widgets.Text, font fonts.Font, clip ClipRectCompose) {
 	tcmd := Text_command{
 		X:       x,
@@ -402,7 +410,64 @@ func (c *CmdBuffer) RectangleR(x, y, w, h float32, clr [4]float32) {
 	c.lastIndc = last + 1
 	c.Render(vert, ind, 6)
 }
+func (c *CmdBuffer) Text2(text *widgets.Text, font fonts.Font, x, y float32, scale float32, clr [4]float32) ([]float32, []int32, int) {
+	texId := font.TextureId
+	vert := []float32{}
+	ind := []int32{}
+	cnt := 0
+	for i, r := range []rune(text.Message) {
+		info := font.GetCharacter(r)
 
+		if info.Rune == rune(127) { // '\n'
+			continue
+		}
+		xPos := x + text.Chars[i].Pos.X
+		yPos := y - text.Chars[i].Pos.Y
+		v, idec, vc := c.addCharacter2(xPos, yPos, scale, texId, *info, clr)
+		vert = append(vert, v...)
+		ind = append(ind, idec...)
+		cnt += vc
+	}
+	return vert, ind, cnt
+}
+func (c *CmdBuffer) addCharacter2(x, y float32, scale float32, texId uint32, info fonts.CharInfo, clr [4]float32) ([]float32, []int32, int) {
+
+	vert := make([]float32, 9*4)
+	ind := make([]int32, 6)
+
+	x0 := x
+	y0 := y
+	x1 := x + scale*float32(info.Width)
+	y1 := y + scale*float32(info.Height)
+
+	ux0, uy0 := info.TexCoords[0].X, info.TexCoords[0].Y
+	ux1, uy1 := info.TexCoords[1].X, info.TexCoords[1].Y
+
+	ind0 := c.lastIndc
+	ind1 := ind0 + 1
+	ind2 := ind1 + 1
+	offset := 0
+
+	fillVertices(vert, &offset, x1, y0, ux1, uy0, float32(texId), clr)
+	fillVertices(vert, &offset, x1, y1, ux1, uy1, float32(texId), clr)
+	fillVertices(vert, &offset, x0, y1, ux0, uy1, float32(texId), clr)
+
+	ind[0] = int32(ind0)
+	ind[1] = int32(ind1)
+	ind[2] = int32(ind2)
+
+	last := ind2 + 1
+
+	fillVertices(vert, &offset, x0, y0, ux0, uy0, float32(texId), clr)
+
+	ind[3] = int32(ind0)
+	ind[4] = int32(ind2)
+	ind[5] = int32(last)
+
+	c.lastIndc = last + 1
+	//c.Render(vert, ind, 6)
+	return vert, ind, 6
+}
 func (c *CmdBuffer) Text(text *widgets.Text, font fonts.Font, x, y float32, scale float32, clr [4]float32) {
 	texId := font.TextureId
 	for i, r := range []rune(text.Message) {

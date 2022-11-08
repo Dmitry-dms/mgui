@@ -7,7 +7,7 @@ import (
 )
 
 type Text struct {
-	base         baseWidget
+	Base         baseWidget
 	Message      string
 	CurrentColor [4]float32
 	Chars        []fonts.CombinedCharInfo // Slice of all chars. It calculates only when Message changes. Is used in draw package.
@@ -44,7 +44,7 @@ func NewText(id, text string, x, y, w, h float32, chars []fonts.CombinedCharInfo
 	t := Text{
 		Message: text,
 		Chars:   chars,
-		base: baseWidget{
+		Base: baseWidget{
 			id:              id,
 			boundingBox:     [4]float32{x, y, w, h + float32(style.TextPadding)},
 			BackgroundColor: style.TransparentColor,
@@ -103,37 +103,47 @@ func (t *Text) CalculateCursorPos() (x, y, w, h float32) {
 }
 
 func (t *Text) UpdatePosition(pos [4]float32) {
-	t.base.boundingBox = pos
+	t.Base.updatePosition(pos)
+	//t.Base.boundingBox = pos
 }
 
 func (t *Text) SetWH(width, height float32) {
-	t.base.boundingBox[2] = width
-	t.base.boundingBox[3] = height //+ float32(t.Padding)
+	t.Base.boundingBox[2] = width
+	t.Base.boundingBox[3] = height //+ float32(t.Padding)
 }
-
+func (t *Text) SetTextColor(clr [4]float32) {
+	if clr == t.CurrentColor {
+		return
+	}
+	t.Base.Updated = true
+	t.CurrentColor = clr
+}
 func (t *Text) SetBackGroundColor(clr [4]float32) {
-	t.base.BackgroundColor = clr
+	if clr == t.Base.BackgroundColor {
+		return
+	}
+	t.Base.BackgroundColor = clr
 }
 
 func (t *Text) BoundingBox() [4]float32 {
-	return t.base.boundingBox
+	return t.Base.boundingBox
 }
 func (t *Text) BackgroundColor() [4]float32 {
-	return t.base.BackgroundColor
+	return t.Base.BackgroundColor
 }
 func (t *Text) Color() [4]float32 {
 	return t.CurrentColor
 }
 func (t *Text) WidgetId() string {
-	return t.base.id
+	return t.Base.id
 }
 
 func (t *Text) Height() float32 {
-	return t.base.height()
+	return t.Base.height()
 }
 func (t *Text) Visible() bool {
 	return true
 }
 func (t *Text) Width() float32 {
-	return t.base.width()
+	return t.Base.width()
 }
