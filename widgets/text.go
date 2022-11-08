@@ -47,7 +47,7 @@ func NewText(id, text string, x, y, w, h float32, chars []fonts.CombinedCharInfo
 		base: baseWidget{
 			id:              id,
 			boundingBox:     [4]float32{x, y, w, h + float32(style.TextPadding)},
-			backgroundColor: style.TransparentColor,
+			BackgroundColor: style.TransparentColor,
 		},
 		CurrentColor: style.TextColor,
 		Size:         style.TextSize,
@@ -112,14 +112,14 @@ func (t *Text) SetWH(width, height float32) {
 }
 
 func (t *Text) SetBackGroundColor(clr [4]float32) {
-	t.base.backgroundColor = clr
+	t.base.BackgroundColor = clr
 }
 
 func (t *Text) BoundingBox() [4]float32 {
 	return t.base.boundingBox
 }
 func (t *Text) BackgroundColor() [4]float32 {
-	return t.base.backgroundColor
+	return t.base.BackgroundColor
 }
 func (t *Text) Color() [4]float32 {
 	return t.CurrentColor

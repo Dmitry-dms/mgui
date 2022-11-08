@@ -14,7 +14,7 @@ func NewButton(id string, x, y, w, h float32, backClr [4]float32) *Button {
 		base: baseWidget{
 			id:              id,
 			boundingBox:     [4]float32{x, y, w, h},
-			backgroundColor: backClr,
+			BackgroundColor: backClr,
 		},
 		IsActive: false,
 		//CurrentColor: backClr,
@@ -54,10 +54,10 @@ func (b *Button) BoundingBox() [4]float32 {
 	return b.base.boundingBox
 }
 func (b *Button) Color() [4]float32 {
-	return b.base.backgroundColor
+	return b.base.BackgroundColor
 }
 
 func (b *Button) SetColor(clr [4]float32) {
 	//b.CurrentColor = clr
-	b.base.backgroundColor = clr
+	b.base.BackgroundColor = clr
 }

@@ -376,11 +376,13 @@ func (wnd *Window) widgetSpaceLogic(ws *WidgetSpace, clip func() draw.ClipRectCo
 			ws.handleMouseScroll(float32(c.io.ScrollY))
 		}
 		if ws.flags&ShowScrollbar != 0 && ws.isVertScrollShown {
-			scrlClip := clip()
-			scrl := ws.verticalScrollbar
-			wnd.buffer.CreateRect(scrl.x, scrl.y, scrl.w, scrl.h, 5, draw.AllRounded, 0, scrl.clr, scrlClip)
-			wnd.buffer.CreateRect(scrl.bX, scrl.bY, scrl.bW, scrl.bH, 5, draw.AllRounded, 0, [4]float32{255, 0, 0, 1}, scrlClip)
-			wnd.buffer.SeparateBuffer(0, scrlClip)
+			wnd.addDelayedWidget(func() {
+				scrlClip := clip()
+				scrl := ws.verticalScrollbar
+				wnd.buffer.CreateRect(scrl.x, scrl.y, scrl.w, scrl.h, 5, draw.AllRounded, 0, scrl.clr, scrlClip)
+				wnd.buffer.CreateRect(scrl.bX, scrl.bY, scrl.bW, scrl.bH, 5, draw.AllRounded, 0, [4]float32{255, 0, 0, 1}, scrlClip)
+				wnd.buffer.SeparateBuffer(0, scrlClip)
+			})
 		}
 	}
 
@@ -835,85 +837,82 @@ func MultiLineTextInput(id string, message *string) {
 	wnd.addCursor(ws.W, ws.H)
 }
 
-func TextFitted(id string, w float32, msg string) {
-	c := ctx()
-	//wnd := c.windowStack.Peek()
-	//x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
-	//txt, hovered := c.textHelper(id, x, y, w, msg, widgets.SplitWords|widgets.Selectable)
-	//if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
-	//	wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
-	//}
-	//y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
-	txt := c.getWidget(id, func() widgets.Widget {
-		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
-		return widgets.NewText(id, msg, 0, 0, width, h, chars, l, c.CurrentStyle, widgets.SplitWords|widgets.Selectable)
-	}).(*widgets.Text)
-	wnd, x, y, isRow, out := CalculateWidgetInfo(txt.Width(), txt.Height())
-	//txt.UpdatePosition([4]float32{x, y, txt.Width(), txt.Height()})
-	if out || wnd == nil {
-		return
-	}
-	hovered := c.tHelper2(txt, msg, w)
-	wnd.debugDrawS(txt.BoundingBox())
-	if hovered {
+//func TextFitted(id string, w float32, msg string) {
+//	c := ctx()
+//	//wnd := c.windowStack.Peek()
+//	//x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
+//	//txt, hovered := c.textHelper(id, x, y, w, msg, widgets.SplitWords|widgets.Selectable)
+//	//if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
+//	//	wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
+//	//}
+//	//y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
+//	txt := c.getWidget(id, func() widgets.Widget {
+//		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+//		return widgets.NewText(id, msg, 0, 0, width, h, chars, l, c.CurrentStyle, widgets.SplitWords|widgets.Selectable)
+//	}).(*widgets.Text)
+//	wnd, x, y, isRow, out := CalculateWidgetInfo(txt.Width(), txt.Height())
+//	//txt.UpdatePosition([4]float32{x, y, txt.Width(), txt.Height()})
+//	if out || wnd == nil {
+//		return
+//	}
+//	hovered := c.tHelper2(txt, msg, w)
+//	wnd.debugDrawS(txt.BoundingBox())
+//	if hovered {
+//
+//	} else {
+//		txt.CurrentColor = whiteColor
+//		txt.SetBackGroundColor(transparent)
+//	}
+//
+//	clip := wnd.endWidget(x, y, isRow, txt)
+//
+//	wnd.buffer.CreateText(x, y, txt, *c.font, clip)
+//}
 
-	} else {
-		txt.CurrentColor = whiteColor
-		txt.SetBackGroundColor(transparent)
-	}
-
-	clip := wnd.endWidget(x, y, isRow, txt)
-
-	wnd.buffer.CreateText(x, y, txt, *c.font, clip)
-}
-
-func Text(id string, msg string, flag widgets.TextFlag) {
-	c := ctx()
-	txt := c.getWidget(id, func() widgets.Widget {
-		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
-		return widgets.NewText(id, msg, 0, 0, width, h, chars, l, c.CurrentStyle, flag)
-	}).(*widgets.Text)
-	wnd, x, y, isRow, _ := CalculateWidgetInfo(txt.Width(), txt.Height())
-	//txt.UpdatePosition([4]float32{x, y, txt.Width(), txt.Height()})
-	//if out || wnd == nil {
-	//	return
-	//}
-	hovered := c.tHelper2(txt, msg, txt.Width())
-	//wnd := c.windowStack.Peek()
-	//x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
-	//txt, hovered := c.textHelper(id, x, y, 0, msg, flag)
-	//if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
-	//	wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
-	//}
-	//y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
-
-	//wnd.buffer.RoundedBorderRectangle(x, y, txt.Width(), txt.Height(), 30, 15, red, wnd.DefaultClip())
-	if hovered {
-		//txt.SetBackGroundColor(softGreen)
-		//txt.CurrentColor = [4]float32{167, 200, 100, 1}
-	} else {
-		txt.CurrentColor = whiteColor
-		txt.SetBackGroundColor(transparent)
-	}
-
-	//txt.CurrentColor = [4]float32{255, 255, 255, 1}
-
-	clip := wnd.endWidget(x, y, isRow, txt)
-
-	wnd.buffer.CreateText(x, y, txt, *c.font, clip)
-}
+//func Text(id string, msg string, flag widgets.TextFlag) {
+//	c := ctx()
+//	txt := c.getWidget(id, func() widgets.Widget {
+//		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+//		return widgets.NewText(id, msg, 0, 0, width, h, chars, l, c.CurrentStyle, flag)
+//	}).(*widgets.Text)
+//	wnd, x, y, isRow, _ := CalculateWidgetInfo(txt.Width(), txt.Height())
+//	//txt.UpdatePosition([4]float32{x, y, txt.Width(), txt.Height()})
+//	//if out || wnd == nil {
+//	//	return
+//	//}
+//	hovered := c.tHelper2(txt, msg, txt.Width())
+//	//wnd := c.windowStack.Peek()
+//	//x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
+//	//txt, hovered := c.textHelper(id, x, y, 0, msg, flag)
+//	//if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
+//	//	wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
+//	//}
+//	//y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
+//
+//	//wnd.buffer.RoundedBorderRectangle(x, y, txt.Width(), txt.Height(), 30, 15, red, wnd.DefaultClip())
+//	if hovered {
+//		//txt.SetBackGroundColor(softGreen)
+//		//txt.CurrentColor = [4]float32{167, 200, 100, 1}
+//	} else {
+//		txt.CurrentColor = whiteColor
+//		txt.SetBackGroundColor(transparent)
+//	}
+//
+//	//txt.CurrentColor = [4]float32{255, 255, 255, 1}
+//
+//	clip := wnd.endWidget(x, y, isRow, txt)
+//
+//	wnd.buffer.CreateText(x, y, txt, *c.font, clip)
+//}
 
 func (wnd *Window) DefaultClip() draw.ClipRectCompose {
 	return draw.NewClip(wnd.currentWidgetSpace.ClipRect, wnd.mainWidgetSpace.ClipRect)
 }
 
-func (c *UiContext) imageHelper(id string, x, y, w, h float32) (img *widgets.Image, hovered, clicked bool) {
+func (c *UiContext) imageHelper(id string, x, y, w, h float32, f func() *widgets.Image) (img *widgets.Image, hovered, clicked bool) {
 	wnd := c.windowStack.Peek()
 
-	img = c.getWidget(id, func() widgets.Widget {
-		img = widgets.NewImage(id, x, y, w, h, whiteColor)
-		return img
-	}).(*widgets.Image)
+	img = f()
 	hovered = c.hoverBehavior(wnd, utils.NewRectS(img.BoundingBox()))
 	{
 		if hovered {
@@ -924,14 +923,15 @@ func (c *UiContext) imageHelper(id string, x, y, w, h float32) (img *widgets.Ima
 	return
 }
 
-func CalculateWidgetInfo(w, h float32) (wnd *Window, x, y float32, isRow, outWindow bool) {
+func CalculateWidgetInfo(w, h float32) (wnd *Window, ws *WidgetSpace, x, y float32, isRow, outWindow bool) {
 	c := ctx()
 	wnd = c.getPeekWindow()
 	if wnd == nil {
 		outWindow = true
 		return
 	}
-	x, y, isRow = wnd.currentWidgetSpace.getCursorPosition()
+	ws = wnd.currentWidgetSpace
+	x, y, isRow = ws.getCursorPosition()
 	if y+h > wnd.y && y <= wnd.y+wnd.h {
 		y += wnd.currentWidgetSpace.resolveRowAlign(h)
 		return
@@ -955,55 +955,104 @@ func CalculateWidgetInfo(w, h float32) (wnd *Window, x, y float32, isRow, outWin
 
 // TextEX(id,x,y,w,h,msg,flag)
 
-func (c *UiContext) ImageEX(id string, x, y, w, h float32) (img *widgets.Image, hovered, clicked bool) {
+func (c *UiContext) ImageEX(id string, x, y, w, h float32, texId uint32, texCoords, clr [4]float32, buff *draw.CmdBuffer, compose draw.ClipRectCompose) (img *widgets.Image, hovered, clicked bool) {
 	img = c.getWidget(id, func() widgets.Widget {
-		img = widgets.NewImage(id, x, y, w, h, whiteColor)
-		return img
+		img2 := widgets.NewImage2(id, x, y, w, h, texId, texCoords, clr)
+		img2.LastVert, img2.LastInd, img2.LastVertCount, img2.Last =
+			buff.CreateTexturedRect2(x, y, w, h, texId, texCoords, clr, compose)
+		return img2
 	}).(*widgets.Image)
 	hovered = utils.PointInRect(c.io.MousePos, utils.NewRectS(img.BoundingBox()))
-
 	if hovered {
 		c.setActiveWidget(img.WidgetId())
 	}
 	clicked = c.io.MouseClicked[0] && hovered
 	return
 }
-func Image2(id string, w, h float32, texId uint32, texCoords [4]float32) bool {
-	c := ctx()
-	wnd, x, y, isRow, out := CalculateWidgetInfo(w, h)
-	if out || wnd == nil {
-		return false
+
+func ClipRect(wnd *Window) draw.ClipRectCompose {
+	var clip draw.ClipRectCompose
+	if wnd.currentWidgetSpace.flags&IgnoreClipping != 0 {
+		clip = draw.NewClip(draw.EmptyClip, wnd.currentWidgetSpace.ClipRect)
+	} else {
+		clip = wnd.DefaultClip()
 	}
-	img, _, clicked := c.ImageEX(id, x, y, w, h)
-
-	clip := wnd.endWidget(x, y, isRow, img)
-	wnd.buffer.CreateTexturedRect(x, y, img.Width(), img.Height(), texId, texCoords, img.Color(), clip)
-	return clicked
-}
-func GlobalImage(id string, x, y, w, h float32, texId uint32, texCoords [4]float32) bool {
-	c := ctx()
-
-	img, _, clicked := c.ImageEX(id, x, y, w, h)
-	img.UpdatePosition([4]float32{x, y, w, h})
-
-	//wnd.buffer.CreateTexturedRect(x, y, img.Width(), img.Height(), texId, texCoords, img.Color(), clip)
-	return clicked
+	return clip
 }
 
+func (c *UiContext) DrawImage(x, y float32, img *widgets.Image, buffer *draw.CmdBuffer, clip draw.ClipRectCompose) {
+	if img.Updated {
+		img.LastVert, img.LastInd, img.LastVertCount, img.Last = buffer.CreateTexturedRect2(x, y,
+			img.Width(), img.Height(), img.TexId, img.TexCoords, img.Color(), clip)
+		buffer.Render2(img.LastVert, img.LastInd, img.LastVertCount, 0)
+		img.Updated = false
+	} else {
+		buffer.Render2(img.LastVert, img.LastInd, img.LastVertCount, img.Last)
+	}
+	buffer.SeparateBuffer(img.TexId, clip)
+}
 func Image(id string, w, h float32, texId uint32, texCoords [4]float32) bool {
 	c := ctx()
-	wnd, x, y, isRow, _ := CalculateWidgetInfo(w, h)
+	wnd, _, x, y, isRow, _ := CalculateWidgetInfo(w, h)
 	//if out || wnd == nil {
 	//	return false
 	//}
-	img, _, clicked := c.imageHelper(id, x, y, w, h)
 
-	clr := img.Color()
+	img, hov, clicked := c.ImageEX(id, x, y, w, h, texId, texCoords, whiteColor, wnd.buffer, wnd.DefaultClip())
+	//wnd.debugDrawS([4]float32{x, y, w, h})
+	if hov {
+		img.SetColor(red)
+	} else {
+		img.SetColor(whiteColor)
+	}
+	c.DrawImage(x, y, img, wnd.buffer, wnd.DefaultClip())
+	wnd.UpdateWidgetPosition(x, y, isRow, img)
 
-	clip := wnd.endWidget(x, y, isRow, img)
-	wnd.buffer.CreateTexturedRect(x, y, img.Width(), img.Height(), texId, texCoords, clr, clip)
-	//wnd.buffer.CreateRect(x, y, img.Width(), img.Height(), 0, draw.StraightCorners, tex.TextureId, clr, clip)
+	//wnd.debugDrawS([4]float32{x, y, w, h})
 	return clicked
+}
+
+//func Text(id string, msg string, flag widgets.TextFlag) {
+//	c := ctx()
+//	txt := c.getWidget(id, func() widgets.Widget {
+//		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+//		return widgets.NewText(id, msg, 0, 0, width, h, chars, l, c.CurrentStyle, flag)
+//	}).(*widgets.Text)
+//	wnd, x, y, isRow, _ := CalculateWidgetInfo(txt.Width(), txt.Height())
+//	//txt.UpdatePosition([4]float32{x, y, txt.Width(), txt.Height()})
+//	//if out || wnd == nil {
+//	//	return
+//	//}
+//	hovered := c.tHelper2(txt, msg, txt.Width())
+//	//wnd := c.windowStack.Peek()
+//	//x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
+//	//txt, hovered := c.textHelper(id, x, y, 0, msg, flag)
+//	//if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
+//	//	wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
+//	//}
+//	//y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
+//
+//	//wnd.buffer.RoundedBorderRectangle(x, y, txt.Width(), txt.Height(), 30, 15, red, wnd.DefaultClip())
+//	if hovered {
+//		//txt.SetBackGroundColor(softGreen)
+//		//txt.CurrentColor = [4]float32{167, 200, 100, 1}
+//	} else {
+//		txt.CurrentColor = whiteColor
+//		txt.SetBackGroundColor(transparent)
+//	}
+//
+//	//txt.CurrentColor = [4]float32{255, 255, 255, 1}
+//
+//	clip := wnd.endWidget(x, y, isRow, txt)
+//
+//	wnd.buffer.CreateText(x, y, txt, *c.font, clip)
+//}
+func (wnd *Window) UpdateWidgetPosition(xPos, yPos float32, isRow bool, w widgets.Widget) {
+	w.UpdatePosition([4]float32{xPos, yPos, w.Width(), w.Height()})
+	wnd.addCursor(w.Width(), w.Height())
+	if !isRow {
+		wnd.currentWidgetSpace.AddVirtualWH(w.Width(), w.Height())
+	}
 }
 
 // TODO: measure performance
@@ -1201,7 +1250,9 @@ func Selection(id string, index *int, data []string, texId uint32, texCoords [4]
 			wnd.endWidget(x, y, isRow, s)
 
 			x2, y2, isRow2 := wnd.currentWidgetSpace.getCursorPosition()
-			img, _, clicked := c.imageHelper(id+"arrow", x2, y2, s.Height(), s.Height())
+			img, _, clicked := c.imageHelper(id+"arrow", x2, y2, s.Height(), s.Height(), func() *widgets.Image {
+				return nil
+			})
 
 			wnd.endWidget(x2-s.Height(), y2, isRow2, img)
 
@@ -1793,8 +1844,11 @@ func EndWindow() {
 
 	wnd = c.windowStack.Pop()
 	wnd.mainWidgetSpace.checkVerScroll()
-	var clip = draw.NewClip(draw.EmptyClip, wnd.mainWidgetSpace.ClipRect)
+
+	//var clip = draw.NewClip(draw.EmptyClip, wnd.mainWidgetSpace.ClipRect)
+	var clip = draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h})
 	wnd.buffer.SeparateBuffer(0, clip) // Make sure that we didn't miss anything
+
 	wnd.mainWidgetSpace.AddVirtualHeight(c.CurrentStyle.BotMargin)
 
 	wnd.mainWidgetSpace.lastVirtualHeight = wnd.mainWidgetSpace.virtualHeight

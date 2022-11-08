@@ -11,7 +11,7 @@ func NewVertSpace(id string, box [4]float32) *VSpace {
 		baseWidget: baseWidget{
 			id:              id,
 			boundingBox:     box,
-			backgroundColor: [4]float32{255, 255, 255, 1},
+			BackgroundColor: [4]float32{255, 255, 255, 1},
 		},
 	}
 	return &vs
@@ -35,7 +35,7 @@ func (s *VSpace) Width() float32 {
 }
 
 func (s *VSpace) Color() [4]float32 {
-	return s.backgroundColor
+	return s.BackgroundColor
 }
 func (s *VSpace) WidgetId() string {
 	return s.id

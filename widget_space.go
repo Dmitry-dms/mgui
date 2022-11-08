@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/Dmitry-dms/mgui/draw"
 	"github.com/Dmitry-dms/mgui/utils"
 	"github.com/Dmitry-dms/mgui/widgets"
 )
@@ -190,4 +191,8 @@ func (ws *WidgetSpace) getCursorPosition() (x float32, y float32, isRow bool) {
 	isRow = ok
 	y -= ws.scrlY
 	return
+}
+
+func (ws *WidgetSpace) Clip() draw.ClipRectCompose {
+	return draw.NewClip(draw.EmptyClip, ws.ClipRect)
 }

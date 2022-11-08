@@ -1,6 +1,7 @@
 package draw
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/Dmitry-dms/mgui/fonts"
@@ -81,7 +82,7 @@ func (c *CmdBuffer) SeparateBuffer(texId uint32, clip ClipRectCompose) {
 			mainClipRect: clip.MainClipRect,
 		},
 	}
-	c.AddCommand(cmd, clip)
+	c.AddCommand2(cmd, clip)
 }
 
 func (c *CmdBuffer) CreateButtonT(x, y float32, btn *widgets.TextButton, font fonts.Font, clip ClipRectCompose) {
@@ -118,9 +119,28 @@ func (c *CmdBuffer) CreateWindow(wnd Window_command, clip ClipRectCompose) {
 	toolbar := wnd.Toolbar
 	c.CreateRect(toolbar.X, toolbar.Y, toolbar.W, toolbar.H, 10, TopRect, 0, toolbar.Clr, clip)
 
-	c.SeparateBuffer(0, clip)
+	//c.SeparateBuffer(0, clip)
 }
+func (c *CmdBuffer) CreateTexturedRect2(x, y, w, h float32, texId uint32, coords, clr [4]float32, clip ClipRectCompose) ([]float32, []int32, int, int) {
+	//cmd := Command{
+	//	Type: RectType,
+	//	Rect: &Rect_command{
+	//		X:      x,
+	//		Y:      y,
+	//		W:      w,
+	//		H:      h,
+	//		Clr:    clr,
+	//		TexId:  texId,
+	//		coords: coords,
+	//	},
+	//}
+	//return c.AddCommand2(cmd, clip)
 
+	vert, ind, count := c.RectangleT2(x, c.displaySize.Y-y, w, h, texId, coords, clr)
+	//c.SeparateBuffer(texId, clip)
+	//fmt.Println(y, ind)
+	return vert, ind, count, c.lastIndc
+}
 func (c *CmdBuffer) CreateTexturedRect(x, y, w, h float32, texId uint32, coords, clr [4]float32, clip ClipRectCompose) {
 	cmd := Command{
 		Type: RectType,
@@ -155,6 +175,91 @@ func (c *CmdBuffer) CreateRect(x, y, w, h float32, radius int, shape RoundedRect
 }
 func checkSliceForNull(s [4]float32) bool {
 	return (s[0] == 0) && (s[1] == 0) && (s[2] == 0) && (s[3] == 0)
+}
+func (c *CmdBuffer) AddCommand2(cmd Command, clip ClipRectCompose) (vert []float32, ind []int32, count int) {
+	c.commands = append(c.commands, cmd)
+
+	switch cmd.Type {
+	case SeparateBuffer:
+		mainRect := clip.MainClipRect
+		innerRect := clip.ClipRect
+
+		x, x2 := int32(mainRect[0]), int32(innerRect[0])
+		y, y2 := int32(mainRect[1]), int32(innerRect[1])
+		w, w2 := int32(mainRect[2]), int32(innerRect[2])
+		h, h2 := int32(mainRect[3]), int32(innerRect[3])
+
+		useInnerClip := !checkSliceForNull(innerRect)
+		xl := x+w < x2+w2
+		yl := y+h < y2+h2
+
+		overlapWidth := useInnerClip && xl
+		overlapHeigth := useInnerClip && yl
+
+		inf := Info{
+			Elems:       c.VertCount - c.lastElems,
+			IndexOffset: c.ofs,
+			TexId:       cmd.sb.texid,
+		}
+		if !useInnerClip {
+			inf.ClipRect = cmd.sb.mainClipRect
+		} else if overlapWidth && overlapHeigth {
+			inf.ClipRect = cmd.sb.mainClipRect
+		} else if overlapWidth {
+			inf.ClipRect = cmd.sb.mainClipRect
+		} else if overlapHeigth {
+			var tmp = cmd.sb.clipRect
+			inf.ClipRect = [4]float32{tmp[0], tmp[1], tmp[2], cmd.sb.mainClipRect[3] - (tmp[1] - cmd.sb.mainClipRect[1])}
+		} else {
+			inf.ClipRect = cmd.sb.clipRect
+		}
+
+		c.Inf = append(c.Inf, inf)
+		c.ofs += c.VertCount - c.lastElems
+		c.lastElems = c.VertCount
+	case RectType:
+		r := cmd.Rect
+		//if r.radius == 0 {
+		if r.TexId == 0 {
+			c.RectangleR(r.X, c.displaySize.Y-r.Y, r.W, r.H, r.Clr)
+
+		} else {
+			vert, ind, count = c.RectangleT2(r.X, c.displaySize.Y-r.Y, r.W, r.H, r.TexId, r.coords, r.Clr)
+			c.SeparateBuffer(r.TexId, clip) // don't forget to slice buffer
+			fmt.Println(r.Y, ind)
+			return
+		}
+		//} else {
+		//	if r.TexId == 0 {
+		//		c.RoundedRectangleR(r.X, c.displaySize.Y-r.Y, r.W, r.H, r.radius, r.shape, r.Clr)
+		//	} else {
+		//		// TODO: Add textured rounded rect
+		//	}
+		//}
+	case Text:
+		t := cmd.Text
+		c.Text(t.Widget, t.Font, t.X, c.displaySize.Y-(t.Y+float32(t.Padding)), t.Scale, t.Clr)
+		c.SeparateBuffer(t.Font.TextureId, clip) // don't forget to slice buffer
+		//case BezierQuad:
+		//	b := cmd.Bezier
+		//	c.DrawBezierQuad(b.StartX, b.StartY, b.SupportX, b.SupportY, b.EndX, b.EndY, b.Steps, b.Clr, clip)
+		//	c.sepBuf(clip, "LINE_STRIP")
+		//case Line:
+		//	l := cmd.Line
+		//	c.DrawLine(l.StartX, c.displaySize.Y-l.StartY, l.EndX, c.displaySize.Y-l.EndY, l.Clr)
+		//	c.sepBuf(clip, "LINE")
+		//case LineStrip:
+		//	l := cmd.Line
+		//	changed := make([]utils.Vec2, len(l.Points))
+		//	for i, p := range l.Points {
+		//		changed[i].Y = c.displaySize.Y - p.Y
+		//		changed[i].X = p.X
+		//	}
+		//	c.DrawLineStrip(l.Clr, changed)
+		//	c.sepBuf(clip, "LINE_STRIP")
+	}
+	//fmt.Println(len(vert), len(ind), count)
+	return
 }
 func (c *CmdBuffer) AddCommand(cmd Command, clip ClipRectCompose) {
 	c.commands = append(c.commands, cmd)
@@ -248,11 +353,18 @@ func (c *CmdBuffer) sepBuf(clip ClipRectCompose, t string) {
 	c.ofs += c.VertCount - c.lastElems
 	c.lastElems = c.VertCount
 }
-
-func (c *CmdBuffer) render(vert []float32, indeces []int32, vertCount int) {
+func (c *CmdBuffer) Render(vert []float32, indeces []int32, vertCount int) {
 	c.Vertices = append(c.Vertices, vert...)
 	c.Indeces = append(c.Indeces, indeces...)
 	c.VertCount += vertCount
+}
+func (c *CmdBuffer) Render2(vert []float32, indeces []int32, vertCount int, ind int) {
+	c.Vertices = append(c.Vertices, vert...)
+	c.Indeces = append(c.Indeces, indeces...)
+	c.VertCount += vertCount
+	if ind != 0 {
+		c.lastIndc = ind
+	}
 }
 
 func (c *CmdBuffer) CreateBorderBox(x, y, w, h, lineWidth float32, clr [4]float32) {
@@ -288,7 +400,7 @@ func (c *CmdBuffer) RectangleR(x, y, w, h float32, clr [4]float32) {
 	ind[5] = int32(last)
 
 	c.lastIndc = last + 1
-	c.render(vert, ind, 6)
+	c.Render(vert, ind, 6)
 }
 
 func (c *CmdBuffer) Text(text *widgets.Text, font fonts.Font, x, y float32, scale float32, clr [4]float32) {
@@ -340,7 +452,40 @@ func (c *CmdBuffer) addCharacter(x, y float32, scale float32, texId uint32, info
 	ind[5] = int32(last)
 
 	c.lastIndc = last + 1
-	c.render(vert, ind, 6)
+	c.Render(vert, ind, 6)
+}
+func (c *CmdBuffer) RectangleT2(x, y, w, h float32, texId uint32, coords [4]float32, clr [4]float32) ([]float32, []int32, int) {
+
+	vert := make([]float32, 9*4)
+	ind := make([]int32, 6)
+
+	ux0, uy0 := coords[2], coords[3]
+	ux1, uy1 := coords[0], coords[1]
+
+	ind0 := c.lastIndc
+	ind1 := ind0 + 1
+	ind2 := ind1 + 1
+	offset := 0
+
+	fillVertices(vert, &offset, x, y, ux1, uy0, float32(texId), clr)
+	fillVertices(vert, &offset, x, y-h, ux1, uy1, float32(texId), clr)
+	fillVertices(vert, &offset, x+w, y-h, ux0, uy1, float32(texId), clr)
+
+	ind[0] = int32(ind0)
+	ind[1] = int32(ind1)
+	ind[2] = int32(ind2)
+
+	last := ind2 + 1
+
+	fillVertices(vert, &offset, x+w, y, ux0, uy0, float32(texId), clr)
+
+	ind[3] = int32(ind0)
+	ind[4] = int32(ind2)
+	ind[5] = int32(last)
+
+	c.lastIndc = last + 1
+	//c.Render(vert, ind, 6)
+	return vert, ind, 6
 }
 
 func (c *CmdBuffer) RectangleT(x, y, w, h float32, texId uint32, coords [4]float32, clr [4]float32) {
@@ -373,7 +518,7 @@ func (c *CmdBuffer) RectangleT(x, y, w, h float32, texId uint32, coords [4]float
 	ind[5] = int32(last)
 
 	c.lastIndc = last + 1
-	c.render(vert, ind, 6)
+	c.Render(vert, ind, 6)
 }
 
 func fillVertices(vert []float32, startOffset *int, x, y, uv0, uv1, texId float32, clr [4]float32) {
@@ -526,7 +671,7 @@ func (c *CmdBuffer) DrawArc(x, y, radius float32, steps int, sector CircleSector
 
 	c.lastIndc = ind2 + 1
 
-	c.render(vert, ind, (numV+1)*3)
+	c.Render(vert, ind, (numV+1)*3)
 }
 func (c *CmdBuffer) CreateLineArc(x, y, radius, steps float32, sector CircleSector, clr [4]float32, clip ClipRectCompose) {
 	switch sector {
@@ -597,7 +742,7 @@ func (c *CmdBuffer) DrawLine(startX, startY, endX, endY float32, clr [4]float32)
 	ind[1] = int32(ind0)
 
 	c.lastIndc = ind0 + 1
-	c.render(vert, ind, 2)
+	c.Render(vert, ind, 2)
 }
 func (c *CmdBuffer) DrawLineStrip(clr [4]float32, points []utils.Vec2) {
 	ind0 := c.lastIndc
@@ -611,7 +756,7 @@ func (c *CmdBuffer) DrawLineStrip(clr [4]float32, points []utils.Vec2) {
 		ind0++
 	}
 	c.lastIndc = ind0
-	c.render(vert, ind, pointsLen)
+	c.Render(vert, ind, pointsLen)
 }
 
 func (c *CmdBuffer) DrawBezierQuad(startX, startY, supportX, supportY, endX, endY, steps float32, clr [4]float32, clip ClipRectCompose) {

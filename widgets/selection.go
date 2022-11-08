@@ -11,7 +11,7 @@ func NewSelection(id string, x, y, w, h float32) *Selection {
 		baseWidget: baseWidget{
 			id:              id,
 			boundingBox:     [4]float32{x, y, w, h},
-			backgroundColor: [4]float32{},
+			BackgroundColor: [4]float32{},
 		},
 		CurrentItem: 0,
 	}

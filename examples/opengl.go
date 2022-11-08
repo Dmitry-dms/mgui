@@ -96,6 +96,7 @@ func (b *GLRender) Draw(displaySize [2]float32, buffer draw.CmdBuffer) {
 	b.shader.UploadMatslice("uProjection", orthoProjection)
 
 	for _, cmd := range buffer.Inf {
+		//fmt.Println(cmd.TexId)
 		//mainRect := cmd.Clip.MainClipRect
 		clipRect := cmd.ClipRect
 
@@ -105,6 +106,8 @@ func (b *GLRender) Draw(displaySize [2]float32, buffer draw.CmdBuffer) {
 		h := int32(clipRect[3])
 
 		y = int32(displayHeight) - (y + h)
+		//_ = x
+		//_ = w
 		// fmt.Printf("type = %s, elems = %d, ofs = %d, texId = %d \n", cmd.Type, cmd.Elems, cmd.IndexOffset, cmd.TexId)
 		if cmd.TexId != 0 {
 			gl.ActiveTexture(gl.TEXTURE0 + cmd.TexId)

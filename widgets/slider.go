@@ -20,7 +20,7 @@ func NewSlider(id string, x, y, w, h, min, max float32, style *styles.Style) *Sl
 		base: baseWidget{
 			id:              id,
 			boundingBox:     [4]float32{x, y, w, h},
-			backgroundColor: [4]float32{123, 32, 12, 0},
+			BackgroundColor: [4]float32{123, 32, 12, 0},
 		},
 		min:          min,
 		max:          max,

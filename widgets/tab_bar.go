@@ -13,7 +13,7 @@ func NewTabBar(id string, x, y, w, h float32) *TabBar {
 	t := TabBar{baseWidget: baseWidget{
 		id:              id,
 		boundingBox:     [4]float32{x, y, w, h},
-		backgroundColor: [4]float32{255, 255, 255, 1},
+		BackgroundColor: [4]float32{255, 255, 255, 1},
 	},
 		Bars:    []*TabItem{},
 		CursorX: x}
