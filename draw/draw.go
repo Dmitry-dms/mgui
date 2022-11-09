@@ -116,7 +116,7 @@ func (c *CmdBuffer) CreateText(x, y float32, txt *widgets.Text, font fonts.Font,
 		WidgetId: txt.WidgetId(),
 	}
 
-	c.CreateRect(x, y, txt.Width(), txt.Height(), 0, StraightCorners, 0, txt.BackgroundColor(), clip)
+	c.CreateRect(x, y, txt.Width(), txt.Height(), 0, StraightCorners, 0, txt.GetBackgroundColor(), clip)
 	c.AddCommand(cmd, clip)
 	//c.CreateBorderBox(x, y, txt.Width(), txt.Height(), 2, [4]float32{255, 0, 0, 1})
 	//c.SeparateBuffer(font.TextureId, clip)

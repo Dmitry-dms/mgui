@@ -6,7 +6,7 @@ import (
 )
 
 type Slider struct {
-	base                   baseWidget
+	baseWidget
 	min, max               float32
 	sliderHeight, btnWidth float32
 	mainSliderPos          [4]float32
@@ -17,7 +17,7 @@ type Slider struct {
 
 func NewSlider(id string, x, y, w, h, min, max float32, style *styles.Style) *Slider {
 	s := Slider{
-		base: baseWidget{
+		baseWidget: baseWidget{
 			id:              id,
 			boundingBox:     [4]float32{x, y, w, h},
 			BackgroundColor: [4]float32{123, 32, 12, 0},
@@ -65,8 +65,8 @@ func (s *Slider) CalculateNumber(i *float32) {
 
 func (s *Slider) calculateSliderPos() {
 	v := (s.Height() - s.sliderHeight) / 2
-	s.mainSliderPos = [4]float32{s.base.boundingBox[0], s.base.boundingBox[1] + v, s.Width(), s.sliderHeight}
-	s.btnSliderPos = [4]float32{s.base.boundingBox[0] + s.CurrentPos, s.base.boundingBox[1], s.btnWidth, s.Height()}
+	s.mainSliderPos = [4]float32{s.boundingBox[0], s.boundingBox[1] + v, s.Width(), s.sliderHeight}
+	s.btnSliderPos = [4]float32{s.boundingBox[0] + s.CurrentPos, s.boundingBox[1], s.btnWidth, s.Height()}
 }
 
 func (s *Slider) MainSliderPos() [4]float32 {
@@ -76,21 +76,21 @@ func (s *Slider) BtnSliderPos() [4]float32 {
 	return s.btnSliderPos
 }
 func (s *Slider) BoundingBox() [4]float32 {
-	return s.base.boundingBox
+	return s.boundingBox
 }
 
 func (s *Slider) UpdatePosition(pos [4]float32) {
-	s.base.boundingBox = pos
+	s.boundingBox = pos
 	s.calculateSliderPos()
 }
 
 func (s *Slider) WidgetId() string {
-	return s.base.id
+	return s.id
 }
 
 func (s *Slider) Height() float32 {
-	return s.base.height()
+	return s.height()
 }
 func (s *Slider) Width() float32 {
-	return s.base.width()
+	return s.width()
 }

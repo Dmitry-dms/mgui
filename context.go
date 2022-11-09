@@ -41,6 +41,8 @@ type UiContext struct {
 	ActiveWidgetSpace                *WidgetSpace
 	FocusedWidgetSpace               *WidgetSpace
 
+	CurrentGlobalWidgetSpace *WidgetSpace
+
 	//SelectableText *widgets.Text
 	SelectedText string
 
@@ -78,7 +80,8 @@ type UiContext struct {
 	//fonts
 	font *fonts.Font
 
-	globalBuffer *draw.CmdBuffer
+	globalBuffer   *draw.CmdBuffer
+	delayedWidgets []func()
 }
 
 const (
@@ -325,6 +328,11 @@ func EndFrame(size [2]float32) {
 	if len(c.sortedWindows) == 0 {
 		return
 	}
+
+	for _, widget := range c.delayedWidgets {
+		widget()
+	}
+
 	for _, v := range c.sortedWindows {
 		c.renderer.Draw(size, *v.buffer)
 		v.buffer.Clear()
@@ -378,6 +386,19 @@ func EndFrame(size [2]float32) {
 	c.io.KeyPressedThisFrame = false
 
 	c.WindowCounter = 0
+}
+
+func SetDisplaySize(w, h float32) {
+	c := ctx()
+	c.io.SetDisplaySize(w, h)
+	// Need to redraw all widgets
+	for _, i := range c.widgetsCache.Map() {
+		i.ToggleUpdate()
+	}
+}
+
+func GET_CONTEXT() *UiContext {
+	return ctx()
 }
 
 type StyleVar4f uint

@@ -6,12 +6,12 @@ type Button struct {
 	//CurrentColor [4]float32
 	//Id           string
 	//BoundingBox  [4]float32 //x,y,w,h
-	base baseWidget
+	baseWidget
 }
 
 func NewButton(id string, x, y, w, h float32, backClr [4]float32) *Button {
 	btn := Button{
-		base: baseWidget{
+		baseWidget: baseWidget{
 			id:              id,
 			boundingBox:     [4]float32{x, y, w, h},
 			BackgroundColor: backClr,
@@ -25,7 +25,7 @@ func NewButton(id string, x, y, w, h float32, backClr [4]float32) *Button {
 }
 func (b *Button) UpdatePosition(pos [4]float32) {
 	//b.BoundingBox = pos
-	b.base.updatePosition(pos)
+	b.updatePosition(pos)
 }
 
 func (b *Button) ChangeActive() {
@@ -34,30 +34,30 @@ func (b *Button) ChangeActive() {
 
 func (b *Button) SetWidth(w float32) {
 	//b.BoundingBox[2] = w
-	b.base.boundingBox[2] = w
+	b.boundingBox[2] = w
 }
 func (b *Button) SetHeight(h float32) {
-	b.base.boundingBox[3] = h
+	b.boundingBox[3] = h
 }
 func (b *Button) WidgetId() string {
-	return b.base.id
+	return b.id
 }
 
 func (b *Button) Height() float32 {
-	return b.base.height()
+	return b.height()
 }
 func (b *Button) Width() float32 {
-	return b.base.width()
+	return b.width()
 }
 
 func (b *Button) BoundingBox() [4]float32 {
-	return b.base.boundingBox
+	return b.boundingBox
 }
 func (b *Button) Color() [4]float32 {
-	return b.base.BackgroundColor
+	return b.BackgroundColor
 }
 
 func (b *Button) SetColor(clr [4]float32) {
 	//b.CurrentColor = clr
-	b.base.BackgroundColor = clr
+	b.BackgroundColor = clr
 }

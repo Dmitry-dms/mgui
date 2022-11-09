@@ -51,6 +51,9 @@ func NewTextButton(id string, x, y, w, h float32,
 
 	return &tb
 }
+func (tb *TextButton) ToggleUpdate() {
+
+}
 
 // UpdateTextPos TODO: Need to improve correct calculation of text position
 func (tb *TextButton) UpdateTextPos(x, y float32) {

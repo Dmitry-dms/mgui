@@ -45,6 +45,10 @@ func (r *HybridLayout) AddColHeight(h float32) {
 	r.CurrentColH += h
 }
 
+func (r *HybridLayout) ToggleUpdate() {
+
+}
+
 func NewHLayout(id string, x, y float32, a RowAlign, style *styles.Style) *HybridLayout {
 	r := HybridLayout{
 		X:     x,

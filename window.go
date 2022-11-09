@@ -185,10 +185,10 @@ func BeginCustomWindow(id string, x, y, w, h, wsX, wsY, wsW, wsH float32, texId 
 		wnd.mainWidgetSpace.W - wnd.mainWidgetSpace.verticalScrollbar.w, wnd.mainWidgetSpace.H}
 
 	//wnd.buffer.CreateWindow(cmdw, draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
-	wnd.widgetSpaceLogic(wnd.mainWidgetSpace, func() draw.ClipRectCompose {
-		cl := [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}
-		return draw.NewClip(draw.EmptyClip, cl)
-	})
+	//wnd.widgetSpaceLogic(wnd.mainWidgetSpace, func() draw.ClipRectCompose {
+	//	cl := [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}
+	//	return draw.NewClip(draw.EmptyClip, cl)
+	//})
 
 	//// Draw selected text regions. We doo it here because we don't want to draw it in front of text.
 	//// Maybe in future I will change text selection algorithm and rework this.
@@ -324,11 +324,13 @@ func BeginWindow(windowName string, opened *bool) {
 	wnd.mainWidgetSpace.ClipRect = [4]float32{wnd.mainWidgetSpace.X, wnd.mainWidgetSpace.Y,
 		wnd.mainWidgetSpace.W - wnd.mainWidgetSpace.verticalScrollbar.w, wnd.mainWidgetSpace.H}
 
-	wnd.buffer.CreateWindow(cmdw, draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
-	wnd.widgetSpaceLogic(wnd.mainWidgetSpace, func() draw.ClipRectCompose {
+	hoveredWs := c.hoverBehavior(wnd, utils.NewRectS(wnd.mainWidgetSpace.ClipRect))
+	actWind := c.ActiveWindow == wnd && c.HoveredWindow == wnd
+	wnd.mainWidgetSpace.widgetSpaceLogic(hoveredWs, actWind, c.io.ScrollY != 0, c.globalBuffer, func() draw.ClipRectCompose {
 		cl := [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}
 		return draw.NewClip(draw.EmptyClip, cl)
 	})
+	wnd.buffer.CreateWindow(cmdw, draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
 
 	// Draw selected text regions. We doo it here because we don't want to draw it in front of text.
 	// Maybe in future I will change text selection algorithm and rework this.
@@ -360,10 +362,10 @@ func BeginWindow(windowName string, opened *bool) {
 
 var step float32 = 100
 
-func (wnd *Window) widgetSpaceLogic(ws *WidgetSpace, clip func() draw.ClipRectCompose) {
+func (ws *WidgetSpace) widgetSpaceLogic(hovering, actWind, isScrollable bool, buffer *draw.CmdBuffer, scrollClip func() draw.ClipRectCompose) {
 	c := uiCtx
 
-	if c.hoverBehavior(wnd, utils.NewRectS(ws.ClipRect)) {
+	if hovering {
 		c.ActiveWidgetSpaceId = ws.id
 		if ws.flags&Scrollable != 0 {
 			c.WantScrollFocusWidgetSpaceId = ws.id
@@ -372,17 +374,20 @@ func (wnd *Window) widgetSpaceLogic(ws *WidgetSpace, clip func() draw.ClipRectCo
 	// Scrollbar behavior
 	if ws.flags&Scrollable != 0 {
 		ws.vertScrollBar()
-		if c.ActiveWindow == wnd && c.HoveredWindow == wnd && c.io.ScrollY != 0 && c.WantScrollFocusWidgetSpaceLastId == ws.id && c.FocusedWidgetSpace == nil {
+		//if c.ActiveWindow == wnd && c.HoveredWindow == wnd && c.io.ScrollY != 0 && c.WantScrollFocusWidgetSpaceLastId == ws.id && c.FocusedWidgetSpace == nil {
+		if actWind && isScrollable && c.WantScrollFocusWidgetSpaceLastId == ws.id && c.FocusedWidgetSpace == nil {
 			ws.handleMouseScroll(float32(c.io.ScrollY))
 		}
 		if ws.flags&ShowScrollbar != 0 && ws.isVertScrollShown {
-			wnd.addDelayedWidget(func() {
-				scrlClip := clip()
-				scrl := ws.verticalScrollbar
-				wnd.buffer.CreateRect(scrl.x, scrl.y, scrl.w, scrl.h, 5, draw.AllRounded, 0, scrl.clr, scrlClip)
-				wnd.buffer.CreateRect(scrl.bX, scrl.bY, scrl.bW, scrl.bH, 5, draw.AllRounded, 0, [4]float32{255, 0, 0, 1}, scrlClip)
-				wnd.buffer.SeparateBuffer(0, scrlClip)
-			})
+			//wnd.addDelayedWidget(func() {
+			scrlClip := scrollClip()
+			scrl := ws.verticalScrollbar
+			//buffer.CreateRect(scrl.x, scrl.y, scrl.w, scrl.h, 0, draw.StraightCorners, 0, scrl.clr, scrlClip)
+			//buffer.CreateRect(scrl.bX, scrl.bY, scrl.bW, scrl.bH, 0, draw.StraightCorners, 0, [4]float32{255, 0, 0, 1}, scrlClip)
+			buffer.CreateRect(scrl.x, scrl.y, scrl.w, scrl.h, 5, draw.AllRounded, 0, scrl.clr, scrlClip)
+			buffer.CreateRect(scrl.bX, scrl.bY, scrl.bW, scrl.bH, 5, draw.AllRounded, 0, [4]float32{255, 0, 0, 1}, scrlClip)
+			buffer.SeparateBuffer(0, scrlClip)
+			//})
 		}
 	}
 
@@ -716,7 +721,7 @@ func TextInput(id string, w, h float32, message *string) {
 	wnd := c.windowStack.Peek()
 	var txtGl *widgets.Text
 	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
-	ws := c.subWidgetSpaceHelperWithBackground(id, x, y, w, h, 0, 0, softGreen, draw.StraightCorners, Scrollable|FitWidth, func() {
+	ws := c.subWidgetSpaceHelperWithBackground(wnd, wnd.buffer, id, x, y, w, h, 0, 0, softGreen, draw.StraightCorners, Scrollable|FitWidth, func() {
 		currWs := wnd.currentWidgetSpace
 		x, y, isRow := currWs.getCursorPosition()
 		msg, key := c.getTextInput()
@@ -767,7 +772,7 @@ func MultiLineTextInput(id string, message *string) {
 	wnd := c.windowStack.Peek()
 	var txtGl *widgets.Text
 	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
-	ws := c.subWidgetSpaceHelperWithBackground(id, x, y, wnd.mainWidgetSpace.W-(x-wnd.x)-wnd.mainWidgetSpace.verticalScrollbar.w, 200, 0, 0, softGreen, draw.StraightCorners, Scrollable|ShowScrollbar|FitWidth, func() {
+	ws := c.subWidgetSpaceHelperWithBackground(wnd, wnd.buffer, id, x, y, wnd.mainWidgetSpace.W-(x-wnd.x)-wnd.mainWidgetSpace.verticalScrollbar.w, 200, 0, 0, softGreen, draw.StraightCorners, Scrollable|ShowScrollbar|FitWidth, func() {
 		currWs := wnd.currentWidgetSpace
 		x, y, isRow := currWs.getCursorPosition()
 		msg, key := c.getTextInput()
@@ -930,7 +935,7 @@ func (c *UiContext) TextEX(ws *WidgetSpace, id string, msg string, newWidth floa
 	txt = c.getWidget(id, func() widgets.Widget {
 		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
 		txt := widgets.NewText(id, msg, ws.cursorX, ws.cursorY, width, h, chars, l, c.CurrentStyle, flag)
-		txt.Base.Updated = true
+		txt.Updated = true
 		return txt
 	}).(*widgets.Text)
 	x, y, isRow, outOfWs = CalculateWidgetInfo(txt.Width(), txt.Height(), ws)
@@ -983,6 +988,7 @@ func ClipRect(wnd *Window) draw.ClipRectCompose {
 	if wnd.currentWidgetSpace.flags&IgnoreClipping != 0 {
 		clip = draw.NewClip(draw.EmptyClip, wnd.currentWidgetSpace.ClipRect)
 	} else {
+		//clip = draw.NewClip(draw.EmptyClip, wnd.currentWidgetSpace.ClipRect)
 		clip = wnd.DefaultClip()
 	}
 	return clip
@@ -1000,11 +1006,22 @@ func (c *UiContext) DrawImage(x, y float32, img *widgets.Image, buffer *draw.Cmd
 	buffer.SeparateBuffer(img.TexId, clip)
 }
 
+func GlobalWidgetSpace(id string, x, y, w, h float32, flag WidgetSpaceFlag, widgFunc func()) {
+	c := ctx()
+	c.subWidgetSpaceHelper(nil, c.globalBuffer, id+"wspace", x, y, w, h, flag, func() {
+		ws := c.getWidgetSpace(id+"wspace", w, h, flag)
+		c.CurrentGlobalWidgetSpace = ws
+		widgFunc()
+		c.CurrentGlobalWidgetSpace = nil
+	})
+}
+
 func GlobalImage(id string, x, y, w, h float32, texId uint32, texCoords [4]float32) bool {
 	c := ctx()
 	var ws *WidgetSpace
 	var clicked bool
-	ws = c.subWidgetSpaceHelper("wsp-"+id, x, y, w, h, IgnoreClipping, func() {
+	ws = c.subWidgetSpaceHelper(nil, c.globalBuffer, "wsp-"+id, x, y, w, h, IgnoreClipping, func() {
+		ws = c.getWidgetSpace("wsp-"+id, w, h, IgnoreClipping)
 		img, x, y, isRow, out := c.ImageEX(ws, id, w, h, texId, texCoords, whiteColor)
 		if out {
 			return
@@ -1024,87 +1041,87 @@ func GlobalImage(id string, x, y, w, h float32, texId uint32, texCoords [4]float
 	return clicked
 }
 
+func (c *UiContext) IsWidgetSpaceAvailable() (wnd *Window, ws *WidgetSpace) {
+	wnd = c.getPeekWindow()
+	if wnd != nil {
+		ws = wnd.currentWidgetSpace
+	} else if c.CurrentGlobalWidgetSpace != nil {
+		ws = c.CurrentGlobalWidgetSpace
+	}
+	return
+}
 func Image(id string, w, h float32, texId uint32, texCoords [4]float32) bool {
 	c := ctx()
 
-	wnd := c.getPeekWindow()
-	ws := wnd.currentWidgetSpace
+	wnd, ws := c.IsWidgetSpaceAvailable()
+	if ws == nil {
+		fmt.Println("Can't find any widget spaces")
+		return false
+	}
 
 	img, x, y, isRow, out := c.ImageEX(ws, id, w, h, texId, texCoords, whiteColor)
 	if out {
 		return false
 	}
-	//img := c.getWidget(id, func() widgets.Widget {
-	//	img2 := widgets.NewImage2(id, ws.cursorX, ws.cursorY, w, h, texId, texCoords, whiteColor)
-	//	img2.Updated = true
-	//	return img2
-	//}).(*widgets.Image)
-	//
-	//x, y, isRow, out := CalculateWidgetInfo(w, h, ws)
-	//if out {
-	//	ws.addCursor(w, h)
-	//	if !isRow {
-	//		ws.AddVirtualWH(w, h)
-	//	}
-	//	return false
-	//}
 
-	//hov, clicked := c.ImageEX(img)
-	hovered := c.hoverBehavior(wnd, utils.NewRectS(img.BoundingBox()))
+	hovered := c.hoverBehavior(wnd, utils.NewRectS(img.BoundingBox())) && c.ActiveWidgetSpaceId == ws.id
 	clicked := hovered && c.io.MouseClicked[0]
 	//img, hov, clicked := c.ImageEX(id, x, y, w, h, texId, texCoords, whiteColor, wnd.buffer, wnd.DefaultClip())
-	//wnd.debugDrawS([4]float32{x, y, w, h})
+	wnd.debugDrawS([4]float32{x, y, w, h})
 	if hovered {
 		img.SetColor(red)
 	} else {
 		img.SetColor(whiteColor)
 	}
 	ws.UpdateWidgetPosition(x, y, isRow, img)
-
-	c.DrawImage(x, y, img, wnd.buffer, wnd.DefaultClip())
+	var clip draw.ClipRectCompose
+	if wnd == nil {
+		clip = ws.Clip()
+		c.DrawImage(x, y, img, c.globalBuffer, clip)
+	} else {
+		clip = ClipRect(wnd)
+		c.DrawImage(x, y, img, wnd.buffer, clip)
+	}
 	return clicked
 }
 
 func Text(id string, msg string, flag widgets.TextFlag) {
 	c := ctx()
-	wnd := c.getPeekWindow()
-	ws := wnd.currentWidgetSpace
-	//txt := c.getWidget(id, func() widgets.Widget {
-	//	width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
-	//	txt := widgets.NewText(id, msg, ws.cursorX, ws.cursorY, width, h, chars, l, c.CurrentStyle, flag)
-	//	txt.Base.Updated = true
-	//	return txt
-	//}).(*widgets.Text)
-	//
-	//x, y, isRow, out := CalculateWidgetInfo(txt.Width(), txt.Height(), ws)
-	//if out {
-	//	ws.addCursor(txt.Width(), txt.Height())
-	//	if !isRow {
-	//		ws.AddVirtualWH(txt.Width(), txt.Height())
-	//	}
-	//	return
-	//}
+	wnd, ws := c.IsWidgetSpaceAvailable()
+	if ws == nil {
+		fmt.Println("Can't find any widget spaces")
+		return
+	}
+
 	txt, x, y, isRow, out := c.TextEX(ws, id, msg, 0, flag)
 	if out {
 		return
 	}
 
-	hovered := c.hoverBehavior(wnd, utils.NewRectS(txt.BoundingBox()))
+	hovered := c.hoverBehavior(wnd, utils.NewRectS(txt.BoundingBox())) && c.ActiveWidgetSpaceId == ws.id
 	if hovered {
 		txt.SetTextColor(softGreen)
 	} else {
 		txt.SetTextColor(c.CurrentStyle.TextColor)
 	}
 	ws.UpdateWidgetPosition(x, y, isRow, txt)
-	c.DrawText(x, y, txt, c.font.TextureId, wnd.buffer, wnd.DefaultClip())
+	var clip draw.ClipRectCompose
+	if wnd == nil {
+		clip = ws.Clip()
+		c.DrawText(x, y, txt, c.font.TextureId, c.globalBuffer, clip)
+	} else {
+		clip = ClipRect(wnd)
+		c.DrawText(x, y, txt, c.font.TextureId, wnd.buffer, clip)
+	}
+
 }
 func (c *UiContext) DrawText(x, y float32, txt *widgets.Text, texid uint32, buffer *draw.CmdBuffer, clip draw.ClipRectCompose) {
-	if txt.Base.Updated {
-		txt.Base.LastVert, txt.Base.LastInd, txt.Base.LastVertCount, txt.Base.Last = buffer.CreateText2(x, y, txt, 1, *c.font)
-		buffer.Render2(txt.Base.LastVert, txt.Base.LastInd, txt.Base.LastVertCount, 0)
-		txt.Base.Updated = false
+	if txt.Updated {
+		txt.LastVert, txt.LastInd, txt.LastVertCount, txt.Last = buffer.CreateText2(x, y, txt, 1, *c.font)
+		buffer.Render2(txt.LastVert, txt.LastInd, txt.LastVertCount, 0)
+		txt.Updated = false
 	} else {
-		buffer.Render2(txt.Base.LastVert, txt.Base.LastInd, txt.Base.LastVertCount, txt.Base.Last)
+		buffer.Render2(txt.LastVert, txt.LastInd, txt.LastVertCount, txt.Last)
 	}
 	buffer.SeparateBuffer(texid, clip)
 }
@@ -1138,6 +1155,9 @@ func (wnd *Window) endWidget(xPos, yPos float32, isRow bool, w widgets.Widget) d
 func (w *Window) addDelayedWidget(f func()) {
 	w.delayedWidgets = append(w.delayedWidgets, f)
 }
+func (c *UiContext) addDelayedWidget(f func()) {
+	c.delayedWidgets = append(c.delayedWidgets, f)
+}
 
 func VSpace(id string) {
 	c := ctx()
@@ -1155,8 +1175,19 @@ func VSpace(id string) {
 
 func (c *UiContext) hoverBehavior(wnd *Window, rect utils.Rect) bool {
 	inRect := utils.PointInRect(c.io.MousePos, utils.NewRect(rect.Min.X, rect.Min.Y, rect.Width(), rect.Height()))
+	if wnd == nil {
+		// FIXME: incorrect calculation
+		focusedWidgSpace := false
+		// Accept widget actions only from focused widget space
+		if c.FocusedWidgetSpace != nil {
+			if c.CurrentGlobalWidgetSpace.id != c.ActiveWidgetSpaceId {
+				focusedWidgSpace = true
+			}
+		}
+		return inRect && !focusedWidgSpace
+	}
 	inWindow := RegionHit(c.io.MousePos.X, c.io.MousePos.Y, wnd.x, wnd.y, wnd.w, wnd.h)
-	//inWindow := RegionHit(c.io.MousePos.X, c.io.MousePos.Y, wnd.x, wnd.y+wnd.toolbar.h, wnd.w, wnd.h-wnd.toolbar.h)
+
 	focusedWidgSpace := false
 	// Accept widget actions only from focused widget space
 	if c.FocusedWidgetSpace != nil {
@@ -1202,7 +1233,7 @@ func TreeNode(id string, msg string, widgFunc func()) bool {
 
 	if tBtn.Active() {
 		x += 50
-		ws := c.subWidgetSpaceHelper(id, x, y+tBtn.Height(), 0, 0, NotScrollable|Resizable, widgFunc)
+		ws := c.subWidgetSpaceHelper(wnd, wnd.buffer, id, x, y+tBtn.Height(), 0, 0, NotScrollable|Resizable, widgFunc)
 		wnd.currentWidgetSpace.AddVirtualHeight(ws.H)
 		wnd.addCursor(ws.W, ws.H)
 	}
@@ -1356,7 +1387,7 @@ func ContextMenu(ownerWidgetId string, flag WidgetSpaceFlag, widgFunc func()) {
 	}
 	bb = widg.BoundingBox()
 	id := ownerWidgetId + "-ws-context"
-	ws := c.getWidgetSpace(id, 0, 0, wnd, Resizable|FitWidth|flag)
+	ws := c.getWidgetSpace(id, 0, 0, Resizable|FitWidth|flag)
 	if c.LastActiveWidget == widg.WidgetId() {
 		c.FocusedWidgetSpace = ws
 	}
@@ -1365,7 +1396,7 @@ func ContextMenu(ownerWidgetId string, flag WidgetSpaceFlag, widgFunc func()) {
 			ws.ClipRect = [4]float32{ws.X, ws.Y, ws.W, ws.H}
 			clip := draw.NewClip(draw.EmptyClip, ws.ClipRect)
 			wnd.buffer.CreateRect(bb[0], bb[1]+widg.Height(), ws.W, ws.H, 0, draw.StraightCorners, 0, black, clip)
-			c.subWidgetSpaceHelper(id, bb[0], bb[1]+widg.Height(), widg.Width(), 0, Resizable|FitWidth|flag, widgFunc)
+			c.subWidgetSpaceHelper(wnd, wnd.buffer, id, bb[0], bb[1]+widg.Height(), widg.Width(), 0, Resizable|FitWidth|flag, widgFunc)
 		}
 		wnd.addDelayedWidget(f)
 	}
@@ -1375,11 +1406,11 @@ func Tooltip(id string, widgFunc func()) {
 	x, y := c.io.MousePos.X+10, c.io.MousePos.Y+5
 	wnd := c.windowStack.Peek()
 
-	ws := c.getWidgetSpace(id, 0, 0, wnd, Resizable|IgnoreClipping)
+	ws := c.getWidgetSpace(id, 0, 0, Resizable|IgnoreClipping)
 
 	wnd.addDelayedWidget(func() {
 		wnd.buffer.CreateRect(x, y, ws.W, ws.H, 0, draw.StraightCorners, 0, black, draw.NewClip(draw.EmptyClip, ws.ClipRect))
-		c.subWidgetSpaceHelper(id, x, y, 0, 0, Resizable|IgnoreClipping, widgFunc)
+		c.subWidgetSpaceHelper(wnd, wnd.buffer, id, x, y, 0, 0, Resizable|IgnoreClipping, widgFunc)
 	})
 }
 
@@ -1411,44 +1442,58 @@ func (wnd *Window) debugDraw(x, y, w, h float32, clr [4]float32) {
 	wnd.buffer.CreateBorderBox(x, y, w, h, 2, clr)
 }
 
-func (c *UiContext) getWidgetSpace(id string, width, height float32, wnd *Window, flags WidgetSpaceFlag) *WidgetSpace {
+var wsWantRebuffer bool
+
+func (c *UiContext) getWidgetSpace(id string, width, height float32, flags WidgetSpaceFlag) *WidgetSpace {
 	ws, ok := c.widgSpaceCache.Get(id)
 	if !ok {
 		ws = newWidgetSpace(id, 0, 0, width, height, flags)
 		c.widgSpaceCache.Add(id, ws)
+		wsWantRebuffer = true
 	}
-	wnd.widgSpaces = append(wnd.widgSpaces, ws)
+	//wnd.widgSpaces = append(wnd.widgSpaces, ws)
 	return ws
 }
 
-func (c *UiContext) subWidgetSpaceHelperEx(id string, x, y, width, height float32, texId uint32, radius int, clr [4]float32, shape draw.RoundedRectShape, flags WidgetSpaceFlag, widgFunc func()) *WidgetSpace {
-	wnd := c.windowStack.Peek()
+func (c *UiContext) subWidgetSpaceHelperEx(wnd *Window, buff *draw.CmdBuffer, id string, x, y, width, height float32, texId uint32, radius int, clr [4]float32, shape draw.RoundedRectShape, flags WidgetSpaceFlag, widgFunc func()) *WidgetSpace {
+	//wnd := c.windowStack.Peek()
 
-	ws := c.getWidgetSpace(id, width, height, wnd, flags)
-
-	var prevWS = wnd.currentWidgetSpace
-	wnd.currentWidgetSpace = ws
-
-	wnd.debugDraw(ws.X, ws.Y, ws.W, ws.H, red)
+	ws := c.getWidgetSpace(id, width, height, flags)
+	var prevWS *WidgetSpace
+	if wnd != nil {
+		prevWS = wnd.currentWidgetSpace
+		wnd.currentWidgetSpace = ws
+	}
 
 	ws.X = x
 	ws.Y = y
 	ws.cursorY = y
 	ws.cursorX = x
 
+	wnd.debugDraw(ws.X, ws.Y, ws.W, ws.H, red)
+
 	outOfWindow := false
-	if y < wnd.mainWidgetSpace.Y {
-		outOfWindow = true
-		// vs-clip-1.png
-		if ws.isVertScrollShown {
-			ws.ClipRect = [4]float32{x, wnd.mainWidgetSpace.Y, ws.W - ws.verticalScrollbar.w, ws.H - (wnd.mainWidgetSpace.Y - y)}
+	if wnd != nil {
+		if y < wnd.mainWidgetSpace.Y {
+			outOfWindow = true
+			// vs-clip-1.png
+			if ws.isVertScrollShown {
+				ws.ClipRect = [4]float32{x, wnd.mainWidgetSpace.Y, ws.W - ws.verticalScrollbar.w, ws.H - (wnd.mainWidgetSpace.Y - y)}
+			} else {
+				//ws.ClipRect = [4]float32{x, wnd.mainWidgetSpace.Y, ws.W, ws.H - (wnd.mainWidgetSpace.Y - y)}
+				ws.ClipRect = [4]float32{x, wnd.mainWidgetSpace.Y, ws.W, ws.H}
+			}
+			//wnd.debugDrawS(ws.ClipRect)
+		} else if y+ws.H > wnd.mainWidgetSpace.Y+wnd.mainWidgetSpace.H {
+			ws.ClipRect = [4]float32{x, y, ws.W, ws.H - (wnd.mainWidgetSpace.Y - y)}
 		} else {
-			//ws.ClipRect = [4]float32{x, wnd.mainWidgetSpace.Y, ws.W, ws.H - (wnd.mainWidgetSpace.Y - y)}
-			ws.ClipRect = [4]float32{x, wnd.mainWidgetSpace.Y, ws.W, ws.H}
+			if ws.isVertScrollShown {
+
+				ws.ClipRect = [4]float32{x, y, ws.W - ws.verticalScrollbar.w, ws.H}
+			} else {
+				ws.ClipRect = [4]float32{x, y, ws.W, ws.H}
+			}
 		}
-		//wnd.debugDrawS(ws.ClipRect)
-	} else if y+ws.H > wnd.mainWidgetSpace.Y+wnd.mainWidgetSpace.H {
-		ws.ClipRect = [4]float32{x, y, ws.W, (wnd.mainWidgetSpace.Y - y)}
 	} else {
 		if ws.isVertScrollShown {
 			ws.ClipRect = [4]float32{x, y, ws.W - ws.verticalScrollbar.w, ws.H}
@@ -1456,6 +1501,7 @@ func (c *UiContext) subWidgetSpaceHelperEx(id string, x, y, width, height float3
 			ws.ClipRect = [4]float32{x, y, ws.W, ws.H}
 		}
 	}
+
 	if flags&FitWidth != 0 {
 		if ws.isVertScrollShown {
 			ws.ClipRect[2] = width - ws.verticalScrollbar.w
@@ -1465,7 +1511,21 @@ func (c *UiContext) subWidgetSpaceHelperEx(id string, x, y, width, height float3
 		ws.W = width
 	}
 
-	wnd.widgetSpaceLogic(ws, func() draw.ClipRectCompose {
+	var hoveredWs, actWind, scrollable bool
+	if wnd != nil {
+		hoveredWs = c.hoverBehavior(wnd, utils.NewRectS(ws.ClipRect))
+		scrollable = c.io.ScrollY != 0
+		actWind = c.ActiveWindow == wnd && c.HoveredWindow == wnd
+	} else {
+		hoveredWs = utils.PointInRect(c.io.MousePos, utils.NewRectS(ws.ClipRect))
+		scrollable = c.io.ScrollY != 0
+		actWind = true
+	}
+
+	// TODO(@Dmitry-dms): Should each widget space have its own LastVertices,LastIndeces etc... for drawing a scrollbar.
+	// Now, global buffer handle it, so it redraws every frame if needed. If it would be a window buffer
+	// we should handle its vertices carefully, because it breaks all widgets inside the window.
+	ws.widgetSpaceLogic(hoveredWs, actWind, scrollable, c.globalBuffer, func() draw.ClipRectCompose {
 		cl := [4]float32{ws.X, ws.Y, ws.W, ws.H}
 		if outOfWindow {
 			cl[1] = wnd.mainWidgetSpace.Y
@@ -1475,13 +1535,12 @@ func (c *UiContext) subWidgetSpaceHelperEx(id string, x, y, width, height float3
 
 	if flags&FillBackground != 0 {
 		if texId == 0 {
-			wnd.buffer.CreateRect(ws.X, ws.Y, ws.W, ws.H, radius, shape, 0, clr, wnd.DefaultClip())
+			buff.CreateRect(ws.X, ws.Y, ws.W, ws.H, radius, shape, 0, clr, wnd.DefaultClip())
 		} else {
 			//TODO: Add textured rect method
 			//wnd.buffer.CreateTexturedRect()
 		}
 	}
-
 	widgFunc()
 	ws.checkVerScroll()
 
@@ -1498,17 +1557,18 @@ func (c *UiContext) subWidgetSpaceHelperEx(id string, x, y, width, height float3
 	//wnd.buffer.CreateRect(wnd.mainWidgetSpace.X, ws.H+y, wnd.w, 2,
 	//	0, draw.StraightCorners, 0, c.CurrentStyle.WidgSpaceDividerColor, wnd.DefaultClip())
 	//wnd.debugDraw(x, y, ws.W, ws.H)
-
-	wnd.currentWidgetSpace = prevWS
+	if wnd != nil {
+		wnd.currentWidgetSpace = prevWS
+	}
 	return ws
 }
 
-func (c *UiContext) subWidgetSpaceHelperWithBackground(id string, x, y, width, height float32, texId uint32, radius int, clr [4]float32, shape draw.RoundedRectShape, flags WidgetSpaceFlag, widgFunc func()) *WidgetSpace {
-	return c.subWidgetSpaceHelperEx(id, x, y, width, height, texId, radius, clr, shape, flags|FillBackground, widgFunc)
+func (c *UiContext) subWidgetSpaceHelperWithBackground(wnd *Window, buff *draw.CmdBuffer, id string, x, y, width, height float32, texId uint32, radius int, clr [4]float32, shape draw.RoundedRectShape, flags WidgetSpaceFlag, widgFunc func()) *WidgetSpace {
+	return c.subWidgetSpaceHelperEx(wnd, buff, id, x, y, width, height, texId, radius, clr, shape, flags|FillBackground, widgFunc)
 }
 
-func (c *UiContext) subWidgetSpaceHelper(id string, x, y, width, height float32, flags WidgetSpaceFlag, widgFunc func()) *WidgetSpace {
-	return c.subWidgetSpaceHelperEx(id, x, y, width, height, 0, 0, transparent, draw.StraightCorners, flags, widgFunc)
+func (c *UiContext) subWidgetSpaceHelper(wnd *Window, buff *draw.CmdBuffer, id string, x, y, width, height float32, flags WidgetSpaceFlag, widgFunc func()) *WidgetSpace {
+	return c.subWidgetSpaceHelperEx(wnd, buff, id, x, y, width, height, 0, 0, transparent, draw.StraightCorners, flags, widgFunc)
 }
 
 func SubWidgetSpace(id string, width, height float32, flags WidgetSpaceFlag, widgFunc func()) {
@@ -1517,7 +1577,7 @@ func SubWidgetSpace(id string, width, height float32, flags WidgetSpaceFlag, wid
 	var ws *WidgetSpace
 
 	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
-	ws = c.subWidgetSpaceHelper(id, x, y, width, height, flags, widgFunc)
+	ws = c.subWidgetSpaceHelper(wnd, wnd.buffer, id, x, y, width, height, flags, widgFunc)
 
 	wnd.currentWidgetSpace.AddVirtualHeight(ws.H)
 	wnd.addCursor(ws.W, ws.H)
@@ -1537,7 +1597,7 @@ func TabItem(name string, widgFunc func()) {
 
 	var ws *WidgetSpace
 	if index == tb.CurrentTab {
-		ws = c.subWidgetSpaceHelper(wspId, x, y, 0, 0, Resizable|HideScrollbar, widgFunc)
+		ws = c.subWidgetSpaceHelper(wnd, wnd.buffer, wspId, x, y, 0, 0, Resizable|HideScrollbar, widgFunc)
 	}
 	if ws != nil {
 		tb.SetHeight(ws.H)
@@ -1555,7 +1615,7 @@ func TabBar(id string, widgFunc func()) {
 	}).(*widgets.TabBar)
 
 	var rowHeight, rowWidth float32
-	ws := c.subWidgetSpaceHelper(id, x, y, 0, 0, Resizable|NotScrollable, func() {
+	ws := c.subWidgetSpaceHelper(wnd, wnd.buffer, id, x, y, 0, 0, Resizable|NotScrollable, func() {
 		//cr := wnd.currentWidgetSpace
 		//wnd.buffer.CreateRect(cr.X, cr.Y, cr.W, cr.H, 10, draw.AllRounded, 0, softGreen, wnd.DefaultClip())
 		Row("rowds", func() {

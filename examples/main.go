@@ -45,7 +45,7 @@ func main() {
 		fmt.Println(width, height)
 		Width = width
 		Height = height
-		// uiCtx.Io().SetDisplaySize(float32(width), float32(height))
+		ui.SetDisplaySize(float32(width), float32(height))
 	}
 
 	window.SetSizeCallback(size)
@@ -177,13 +177,13 @@ func main() {
 		ui.NewFrame([2]float32{float32(Width), float32(Height)})
 
 		firstWindow()
+		//secondWindow()
 		//customWindow()
 
 		if ui.GetIo().IsKeyPressed(ui.GuiKey_Space) {
-			//fmt.Println(uiCtx.FocusedTextInput)
+			fmt.Println(ui.GET_CONTEXT().ActiveWidgetSpaceId)
 			opendW = true
 		}
-		//secondWindow()
 
 		ui.EndFrame([2]float32{float32(Width), float32(Height)})
 
@@ -210,7 +210,7 @@ func customWindow() {
 		100, 160, 400, 480,
 		custWnd.TextureId, custWnd.TexCoords, func() {
 			ui.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
-			//ui.Text("text-ttp-4", "Обычная", ui.Selectable)
+			ui.Text("text-ttp-4", "Обычная", ui.Selectable)
 		})
 }
 
@@ -221,15 +221,22 @@ var dur int64 = 0
 var tmer = time.NewTicker(1 * time.Second)
 
 func firstWindow() {
-	//ui.GlobalImage("glob", 200, 200, 100, 100, tex.TextureId, tex.TexCoords)
+	//ui.GlobalWidgetSpace("glob", 200, 200, 300, 300, ui.IgnoreClipping|ui.Resizable, func() {
+	//	ui.Image("-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
+	//	ui.Text("-txt", "dfdgfg - это текст-\"рыба\"", ui.Selectable)
+	//})
+	//ui.GlobalImage("glob", 100, 100, 100, 100, tex.TextureId, tex.TexCoords)
 	ui.BeginWindow("The first window", &opendW)
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Text("text-ttp-2", "Обычная картинка \nи это то-же 1", ui.Selectable)
 	//uiCtx.Text("text-ttp-3", "Обычная картинка и \nэто то-же 2", ui.Editable)
 	start := time.Now()
-	ui.SubWidgetSpace("dfd", 100, 100, ui.Default, func() {
-		ui.Image(fmt.Sprint(12)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
+	ui.SubWidgetSpace("dfапаd", 200, 300, ui.Scrollable, func() {
+		for i := 0; i < 5; i++ {
+			ui.Image(fmt.Sprint(i)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
+		}
+		//ui.Image(fmt.Sprint(12)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
 		ui.Text(fmt.Sprint(2131)+"-txt", "dfdgfg - это текст-\"рыба\"", ui.Selectable)
 	})
 	//for i := 0; i < 100; i++ {
@@ -364,31 +371,35 @@ var slCounter float32 = 0
 
 func secondWindow() {
 	ui.BeginWindow("second wnd", &opendW)
-	ui.Row("row 1dfdf14", func() {
-		ui.Image("#im4", 100, 100, tex.TextureId, tex.TexCoords)
-		ui.Image("#im4", 100, 100, tex.TextureId, tex.TexCoords)
+	ui.SubWidgetSpace("dfd", 100, 100, ui.Default|ui.Resizable, func() {
+		ui.Image("-iytuyumgy5g", 100, 100, tex.TextureId, tex.TexCoords)
+		ui.Text("-txfgjt", "the quick brown fox \njumps over the lazy dog", ui.Selectable)
 	})
+	//ui.Row("row 1dfdf14", func() {
+	//	ui.Image("#im4", 100, 100, tex.TextureId, tex.TexCoords)
+	//	ui.Image("#im4", 100, 100, tex.TextureId, tex.TexCoords)
+	//})
 
 	//cl := fmt.Sprintf("%.0f", slCounter)
 	//uiCtx.Text("text-1dff", "The quick brown fox jumps over the lazy dog", 16)
 	//ui.Text("text-1dff", "Съешь еще этих мягких", 16)
 	//ui.Text("text-1dfhjyf", cl, 16)
-	ui.Slider("slider-1", &slCounter, 0, 255)
-
-	ui.Row("row 13214", func() {
-		ui.Image("#im4kjdg464", 100, 100, tex.TextureId, tex.TexCoords)
-		ui.Column("col fdfd", func() {
-			ui.Image("#im76", 100, 100, tex2.TextureId, tex2.TexCoords)
-			ui.Image("#im4", 100, 100, tex.TextureId, tex.TexCoords)
-		})
-
-		ui.Column("col fdfdвава", func() {
-			ui.Button("ASsfdffb")
-			ui.Button("ASsfdffbbb")
-		})
-
-		ui.Image("#im4kj", 100, 100, tex.TextureId, tex.TexCoords)
-	})
+	//ui.Slider("slider-1", &slCounter, 0, 255)
+	//
+	//ui.Row("row 13214", func() {
+	//	ui.Image("#im4kjdg464", 100, 100, tex.TextureId, tex.TexCoords)
+	//	ui.Column("col fdfd", func() {
+	//		ui.Image("#im76", 100, 100, tex2.TextureId, tex2.TexCoords)
+	//		ui.Image("#im4", 100, 100, tex.TextureId, tex.TexCoords)
+	//	})
+	//
+	//	ui.Column("col fdfdвава", func() {
+	//		ui.Button("ASsfdffb")
+	//		ui.Button("ASsfdffbbb")
+	//	})
+	//
+	//	ui.Image("#im4kj", 100, 100, tex.TextureId, tex.TexCoords)
+	//})
 
 	ui.EndWindow()
 }

@@ -1,6 +1,8 @@
 package cache
 
-import "sync"
+import (
+	"sync"
+)
 
 type RamCache[T any] struct {
 	m  map[string]T
@@ -23,7 +25,9 @@ func (c *RamCache[T]) Add(key string, val T) bool {
 	c.m[key] = val
 	return true
 }
-
+func (c *RamCache[T]) Map() map[string]T {
+	return c.m
+}
 func (c *RamCache[T]) Get(key string) (T, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

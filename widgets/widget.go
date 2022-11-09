@@ -6,6 +6,7 @@ type Widget interface {
 	Height() float32
 	Width() float32
 	BoundingBox() [4]float32
+	ToggleUpdate()
 }
 type PaddingType uint
 
@@ -28,6 +29,9 @@ type baseWidget struct {
 	Updated         bool
 }
 
+func (b *baseWidget) ToggleUpdate() {
+	b.Updated = true
+}
 func (b *baseWidget) height() float32 {
 	return b.boundingBox[3]
 }
