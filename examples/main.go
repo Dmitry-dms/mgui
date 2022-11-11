@@ -10,6 +10,8 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"image"
 	"image/png"
+	"net/http"
+	"net/http/pprof"
 	"os"
 	"runtime"
 	"sort"
@@ -24,7 +26,26 @@ var window *glfw.Window
 var Width, Height int = 1280, 720
 var steps int = 1
 
+func startPprof() {
+	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/p", func(w http.ResponseWriter, r *http.Request) {
+			pprof.Index(w, r)
+		})
+		mux.HandleFunc("/profile", pprof.Profile)
+		mux.Handle("/heap", pprof.Handler("heap"))
+		mux.Handle("/allocs", pprof.Handler("allocs"))
+		mux.Handle("/goroutine", pprof.Handler("goroutine"))
+
+		if err := http.ListenAndServe(":8543", mux); err != nil {
+			fmt.Println("Can't start monitoring on port 8543")
+			os.Exit(1)
+		}
+	}()
+}
+
 func main() {
+	startPprof()
 	err := glfw.Init()
 	if err != nil {
 		panic(err)
@@ -82,6 +103,12 @@ func main() {
 	fontName2 := "C:/Windows/Fonts/times.ttf"
 	f, _ := ui.UploadFont(fontName2, 24, 157.0, 32, 256)
 	f2, _ := ui.UploadFont(fontName, 18, 157.0, 32, 256)
+	//d2.Pix = []uint8{}
+	//d.Pix = []uint8{}
+	//d = nil
+	//d2 = nil
+	//_ = d
+	//_ = d2
 	//ConvertFontToAtlas(f, sheet, data)
 	//ConvertFontToAtlas(f2, sheet, data2)
 
@@ -106,6 +133,7 @@ func main() {
 		panic(err)
 	}
 	t2 := UploadRGBATextureFromMemory(sheet.Image())
+	sheet.ClearImage()
 	f.TextureId = t2.TextureId
 	f2.TextureId = t2.TextureId
 
@@ -232,22 +260,23 @@ func firstWindow() {
 	//uiCtx.Text("text-ttp-2", "Обычная картинка \nи это то-же 1", ui.Selectable)
 	//uiCtx.Text("text-ttp-3", "Обычная картинка и \nэто то-же 2", ui.Editable)
 	start := time.Now()
-	ui.SubWidgetSpace("dfапаd", 200, 300, ui.Scrollable, func() {
-		for i := 0; i < 5; i++ {
-			ui.Image(fmt.Sprint(i)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
-		}
-		//ui.Image(fmt.Sprint(12)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
-		ui.Text(fmt.Sprint(2131)+"-txt", "dfdgfg - это текст-\"рыба\"", ui.Selectable)
-	})
+	//ui.SubWidgetSpace("dfапаd", 200, 300, ui.Scrollable, func() {
+	//	for i := 0; i < 5; i++ {
+	//		ui.Image(fmt.Sprint(i)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
+	//	}
+	//	//ui.Image(fmt.Sprint(12)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
+	//	ui.Text(fmt.Sprint(2131)+"-txt", "dfdgfg - это текст-\"рыба\"", ui.Selectable)
+	//})
 	//for i := 0; i < 100; i++ {
 	//	//fmt.Println(tex.TexCoords)
-	//	ui.Image(fmt.Sprint(i)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
-	//	ui.Text(fmt.Sprint(i)+"-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
+	ui.Image("-iyimgy5g", 100, 100, tex.TextureId, tex.TexCoords)
+	ui.Text("-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
 	//}
-
+	ui.Slider("slds", &tW, 100, 1200)
 	elapsed := time.Since(start)
 	dur += elapsed.Microseconds()
 	counter++
+	ui.TextFitted("text-ttваы-1", tW, "Съешь ещё этих мягких французских булочек")
 	//fmt.Printf("Widgets took %d \n", int(dur)/counter)
 	{
 		//ui.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
@@ -255,7 +284,6 @@ func firstWindow() {
 		//uiCtx.Text("tlorem", "Lorem Ipsum - это текст-\"рыба\", часто \nиспользуемый в печати и вэб-дизайне. Lorem Ipsum является \nстандартной \"рыбой\" для текстов на \nлатинице с начала XVI века.", ui.Selectable)
 		//ui.Button("fd")
 		//ui.ButtonT("ds", "Sas")
-		//ui.TextFitted("text-ttваы-1", tW, "Съешь ещё этих мягких французских булочек")
 		//ui.Row("slider-row", func() {
 		//ui.Slider("slds", &tW, 100, 1200)
 		//	ui.Text("sl-tex", fmt.Sprint(tW), ui.DefaultTextFlag)

@@ -54,6 +54,9 @@ func NewSpriteSheet(initWidth int, filename string) *SpriteSheet {
 func (s *SpriteSheet) Image() *image.RGBA {
 	return s.image
 }
+func (s *SpriteSheet) ClearImage() {
+	s.image.Pix = []uint8{}
+}
 
 func (s *SpriteSheet) GetGroup(id string) (*Group, bool) {
 	g, ok := s.Groups[id]
@@ -253,6 +256,7 @@ func GetSpriteSheetFromFile(filename, imageName string) (*SpriteSheet, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer fil.Close()
 	var ss SpriteSheet
 	dec := json.NewDecoder(fil)
 	err = dec.Decode(&ss)

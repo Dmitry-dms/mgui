@@ -68,9 +68,6 @@ type UiContext struct {
 	//refactor
 	Time float32
 
-	//intent
-	wantResizeH, wantResizeV bool
-
 	//style
 	CurrentStyle       *styles.Style
 	prevStyle          *styles.Style
@@ -140,8 +137,10 @@ func (c *UiContext) dragBehaviorInWindow(rect utils.Rect, captured *bool) {
 	if !*captured {
 		*captured = utils.PointInRect(c.io.MousePos, rect) && c.io.DragStarted(rect) && c.io.IsDragging
 		if c.ActiveWindow != nil {
+			// FIXME(@Dmitry-dms): The next frame window moves a bit.
 			c.ActiveWindow.capturedInsideWin = *captured
 		}
+	} else {
 	}
 	if c.io.MouseReleased[0] {
 		*captured = false
@@ -337,19 +336,19 @@ func EndFrame(size [2]float32) {
 		c.renderer.Draw(size, *v.buffer)
 		v.buffer.Clear()
 	}
-	if len(c.globalBuffer.Inf) != 0 {
+	if len(c.globalBuffer.DrawCalls) != 0 {
 		c.renderer.Draw(size, *c.globalBuffer)
 		c.globalBuffer.Clear()
 	}
 
 	// c.renderer.End()
 
-	if !c.io.IsDragging && c.wantResizeH == true {
-		c.wantResizeH = false
-
-	} else if !c.io.IsDragging && c.wantResizeV == true {
-		c.wantResizeV = false
-	}
+	//if !c.io.IsDragging && c.wantResizeH == true {
+	//	c.wantResizeH = false
+	//
+	//} else if !c.io.IsDragging && c.wantResizeV == true {
+	//	c.wantResizeV = false
+	//}
 
 	c.io.ScrollX = 0
 	c.io.ScrollY = 0
@@ -453,11 +452,11 @@ func (c *UiContext) LineArc() {
 
 func (c *UiContext) Bezier() {
 	wnd := c.windowStack.Peek()
-	wnd.buffer.CreateBezierQuad(300, 500, 20, 150, 300, 300, 20, [4]float32{255, 0, 0, 1}, wnd.DefaultClip())
+	wnd.buffer.CreateBezierQuad(300, 500, 20, 150, 300, 300, 20, [4]float32{255, 0, 0, 1})
 }
 func (c *UiContext) Line(end float32) {
 	wnd := c.windowStack.Peek()
-	wnd.buffer.CreateLine(0, 0, end, end, [4]float32{255, 0, 0, 1}, wnd.DefaultClip())
+	wnd.buffer.CreateLine(0, 0, end, end, [4]float32{255, 0, 0, 1})
 
 }
 

@@ -84,7 +84,7 @@ func (b *GLRender) Draw(displaySize [2]float32, buffer draw.CmdBuffer) {
 	gl.BufferData(gl.ARRAY_BUFFER, len(buffer.Vertices)*4, gl.Ptr(buffer.Vertices), gl.STREAM_DRAW)
 
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, b.ebo)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(buffer.Indeces)*4, gl.Ptr(buffer.Indeces), gl.STREAM_DRAW)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(buffer.Indices)*4, gl.Ptr(buffer.Indices), gl.STREAM_DRAW)
 
 	orthoProjection := [4][4]float32{
 		{2.0 / displayWidth, 0.0, 0.0, 0.0},
@@ -95,7 +95,7 @@ func (b *GLRender) Draw(displaySize [2]float32, buffer draw.CmdBuffer) {
 
 	b.shader.UploadMatslice("uProjection", orthoProjection)
 
-	for _, cmd := range buffer.Inf {
+	for _, cmd := range buffer.DrawCalls {
 		//fmt.Println(cmd.TexId)
 		//mainRect := cmd.Clip.MainClipRect
 		clipRect := cmd.ClipRect
@@ -405,6 +405,7 @@ func UploadRGBATextureFromMemory(data image.Image) *Texture {
 		Height:    int32(h),
 	}
 	textureStruct.Unbind()
+	pixels = nil
 	return &textureStruct
 }
 
