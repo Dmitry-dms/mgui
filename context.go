@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"github.com/Dmitry-dms/mgui/cache"
 	"github.com/Dmitry-dms/mgui/draw"
 	"github.com/Dmitry-dms/mgui/fonts"
@@ -370,6 +371,8 @@ func EndFrame(size [2]float32) {
 
 	if c.FocusedTextInput != nil {
 		if utils.PointOutsideRect(c.io.MouseClickedPos[0], utils.NewRectS(c.FocusedTextInput.BoundingBox())) {
+			ToggleAllWidgets()
+			fmt.Println("outside")
 			c.FocusedTextInput = nil
 		}
 	}
@@ -391,6 +394,13 @@ func SetDisplaySize(w, h float32) {
 	c := ctx()
 	c.io.SetDisplaySize(w, h)
 	// Need to redraw all widgets
+	ToggleAllWidgets()
+}
+
+// ToggleAllWidgets is responsible for setting the Update=true flag for all widgets.
+// TODO(@Dmitry-dms): Should it be only visible widgets?
+func ToggleAllWidgets() {
+	c := ctx()
 	for _, i := range c.widgetsCache.Map() {
 		i.ToggleUpdate()
 	}

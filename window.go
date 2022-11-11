@@ -325,11 +325,17 @@ func BeginWindow(windowName string, opened *bool) {
 
 	// Draw selected text regions. We doo it here because we don't want to draw it in front of text.
 	// Maybe in future I will change text selection algorithm and rework this.
-	//for _, region := range wnd.textRegions {
-	//	b := region.Min
-	//	wnd.buffer.CreateRect(b.X, b.Y, region.Width(), region.Height(), 0, draw.StraightCorners, 0,
-	//		softGreen, wnd.DefaultClip())
-	//}
+	for _, region := range wnd.textRegions {
+		b := region.Min
+		//v, ind, cnr, _ := wnd.buffer.CreateRect(b.X, b.Y, region.Width(), region.Height(), softGreen)
+		//wnd.buffer.SendToBuffer(v, ind, cnr, 0)
+		DrawRect(wnd.buffer, fmt.Sprint(b)+"tregfg", b.X, b.Y, region.Width(), region.Height(), softGreen)
+	}
+	// All widgets need to be updated because new vertices are added to buffer and widgets stay in the same place.
+	if len(wnd.textRegions) != 0 {
+		ToggleAllWidgets()
+	}
+
 	c.windowStack.Push(wnd)
 
 	if wnd.toolbar.h != 0 {
@@ -345,12 +351,14 @@ func BeginWindow(windowName string, opened *bool) {
 		//box := b.BoundingBox()
 		//wnd.buffer.CreateRect(wnd.x+wnd.w-25, wnd.y, 25, 25, 0, draw.StraightCorners,
 		//	0, b.Color(), draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
-		wnd.endWidget(wnd.x+wnd.w-25, wnd.y, false, b)
-		txt, _, _, _, _ := c.TextEX(wnd.mainWidgetSpace, windowName+"-txt", windowName, 0, DefaultTextFlag)
-		c.DrawText(wnd.x, wnd.y, txt, c.font.TextureId, wnd.buffer, draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
+		//wnd.endWidget(wnd.x+wnd.w-25, wnd.y, false, b)
+		txt, _, _, _, out := c.TextEX(wnd.mainWidgetSpace, windowName+"-txt", windowName, 0, DefaultTextFlag)
+		if out { // Prevent cursor changing because we draw it outside main widget space
+			wnd.mainWidgetSpace.addCursor(-txt.Width(), -txt.Height())
+			wnd.mainWidgetSpace.AddVirtualWH(-txt.Width(), -txt.Height())
+		}
 		txt.UpdatePosition([4]float32{wnd.x, wnd.y, txt.Width(), txt.Height()})
-		//txt, _ := c.textHelper(windowName, wnd.x, wnd.y, 10, windowName, DefaultTextFlag)
-		//wnd.buffer.CreateText(wnd.x, wnd.y, txt, *c.font, draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
+		c.DrawText(wnd.x, wnd.y, txt, c.font.TextureId, wnd.buffer, draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
 	}
 }
 
@@ -373,18 +381,13 @@ func (ws *WidgetSpace) widgetSpaceLogic(hovering, actWind, isScrollable bool, bu
 			ws.handleMouseScroll(float32(c.io.ScrollY))
 		}
 		if ws.flags&ShowScrollbar != 0 && ws.isVertScrollShown {
-			//wnd.addDelayedWidget(func() {
-			//scrlClip := scrollClip()
-			//scrl := ws.verticalScrollbar
-			//buffer.CreateRect(scrl.x, scrl.y, scrl.w, scrl.h, 0, draw.StraightCorners, 0, scrl.clr, scrlClip)
-			//buffer.CreateRect(scrl.bX, scrl.bY, scrl.bW, scrl.bH, 0, draw.StraightCorners, 0, [4]float32{255, 0, 0, 1}, scrlClip)
-			//buffer.CreateRect(scrl.x, scrl.y, scrl.w, scrl.h, 5, draw.AllRounded, 0, scrl.clr, scrlClip)
-			//buffer.CreateRect(scrl.bX, scrl.bY, scrl.bW, scrl.bH, 5, draw.AllRounded, 0, [4]float32{255, 0, 0, 1}, scrlClip)
-			//buffer.SeparateBuffer(0, scrlClip)
-			//})
+			scrlClip := scrollClip()
+			scrl := ws.verticalScrollbar
+			DrawRoundedRect(buffer, ws.id+"-vertScroll", scrl.x, scrl.y, scrl.w, scrl.h, scrl.clr, draw.AllRounded, 5)
+			DrawRoundedRect(buffer, ws.id+"-vertScroll-btn", scrl.bX, scrl.bY, scrl.bW, scrl.bH, [4]float32{255, 0, 0, 1}, draw.AllRounded, 5)
+			buffer.SeparateBuffer(0, scrlClip)
 		}
 	}
-
 }
 
 var (
@@ -478,7 +481,9 @@ func DrawRoundedRect(buff *draw.CmdBuffer, id string, x, y, w, h float32, clr [4
 func DrawRectEX(buff *draw.CmdBuffer, id string, x, y, w, h float32, clr [4]float32, shape draw.RoundedRectShape, radius int) *widgets.Rectangle {
 	c := ctx()
 	r := c.getWidget(id, func() widgets.Widget {
-		return widgets.NewRectangle(id, x, y, w, h, clr)
+		r := widgets.NewRectangle(id, x, y, w, h, clr)
+		r.ToggleUpdate()
+		return r
 	}).(*widgets.Rectangle)
 
 	r.UpdatePosition([4]float32{x, y, w, h})
@@ -680,14 +685,18 @@ func (c *UiContext) tHelper(id string, x, y, w float32, msg string, flag widgets
 	return
 }
 
-func (c *UiContext) inputTextHelper(id string, x, y, w float32, msg string, inpmsg *string, key GuiKey, flag widgets.TextFlag) (txt *widgets.Text, hovered bool) {
-	wnd := c.windowStack.Peek()
+func (c *UiContext) InputTexEX(ws *WidgetSpace, wnd *Window, id string, inputMsg string, inpmsg *string, key GuiKey, flag widgets.TextFlag) (txt *widgets.Text, x, y float32, isRow, outOfWs bool) {
 	txt = c.getWidget(id, func() widgets.Widget {
 		width, h, l, chars := c.font.CalculateTextBounds(*inpmsg, c.CurrentStyle.FontScale)
-		return widgets.NewText(id, *inpmsg, x, y, width, h, chars, l, c.CurrentStyle, flag)
+		txt = widgets.NewText(id, *inpmsg, ws.cursorX, ws.cursorY, width, h, chars, l, c.CurrentStyle, flag)
+		txt.Updated = true
+		return txt
 	}).(*widgets.Text)
-	hovered = c.hoverBehavior(wnd, utils.NewRectS(txt.BoundingBox()))
+
+	x, y, isRow, outOfWs = c.WidgetEX(ws, txt.Width(), txt.Height())
+
 	if key != GuiKey_None && flag&widgets.Editable != 0 && c.FocusedTextInput == txt {
+		txt.ToggleUpdate()
 		if key == GuiKey_Backspace {
 			if c.SelectedText != "" {
 				*inpmsg = strings.ReplaceAll(*inpmsg, c.SelectedText, "")
@@ -707,7 +716,7 @@ func (c *UiContext) inputTextHelper(id string, x, y, w float32, msg string, inpm
 			txt.CursorHelper(-1)
 		} else if key == GuiKey_Enter {
 			if txt.Flag&widgets.MultiLine != 0 {
-				tmp := insertIntoString2(*inpmsg, txt.CursorLine, txt.CursorInd, msg, txt.Lines)
+				tmp := insertIntoString2(*inpmsg, txt.CursorLine, txt.CursorInd, inputMsg, txt.Lines)
 				txt.CursorLine++
 				txt.CursorInd = 0
 				*inpmsg = tmp
@@ -715,7 +724,7 @@ func (c *UiContext) inputTextHelper(id string, x, y, w float32, msg string, inpm
 		} else if IsCommandKey(key) {
 
 		} else if key != GuiKey_None {
-			tmp := insertIntoString2(*inpmsg, txt.CursorLine, txt.CursorInd, msg, txt.Lines)
+			tmp := insertIntoString2(*inpmsg, txt.CursorLine, txt.CursorInd, inputMsg, txt.Lines)
 			txt.CursorInd++
 			*inpmsg = tmp
 		}
@@ -724,7 +733,6 @@ func (c *UiContext) inputTextHelper(id string, x, y, w float32, msg string, inpm
 		txt.Chars = chars
 		txt.SetWH(width, h)
 		txt.Message = *inpmsg
-		txt.LastWidth = w
 	}
 	return
 }
@@ -744,37 +752,35 @@ func (c *UiContext) getTextInput() (string, GuiKey) {
 
 func TextInput(id string, w, h float32, message *string) {
 	c := ctx()
-	wnd := c.windowStack.Peek()
+	wnd, ws := c.IsWidgetSpaceAvailable()
+	if ws == nil {
+		fmt.Println("Can't find any widget spaces")
+		return
+	}
 	var txtGl *widgets.Text
 	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
-	ws := c.subWidgetSpaceHelperWithBackground(wnd, wnd.buffer, id, x, y, w, h, 0, 0, softGreen, draw.StraightCorners, Scrollable|FitWidth, func() {
+	ws = c.subWidgetSpaceHelperWithBackground(wnd, wnd.buffer, id, x, y, w, h, 0, 0, softGreen, draw.StraightCorners, Scrollable|FitWidth, func() {
 		currWs := wnd.currentWidgetSpace
-		x, y, isRow := currWs.getCursorPosition()
 		msg, key := c.getTextInput()
-		txt, hovered := c.inputTextHelper(id, x, y, currWs.W, msg, message, key, widgets.Editable|Selectable)
-		txtGl = txt
-		if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
+		txt, x, y, isRow, out := c.InputTexEX(currWs, wnd, id, msg, message, key, widgets.Editable|Selectable)
+		if out {
+			return
+		} else {
 			wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
 		}
-		y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
+		txtGl = txt
 
-		if hovered {
-
-		} else {
-			txt.CurrentColor = whiteColor
-			txt.SetBackGroundColor(transparent)
-		}
-
-		wnd.endWidget(x, y, isRow, txt)
-		//ws := wnd.currentWidgetSpace
+		clip, buffer := ws.UpdateWidgetPosition(x, y, isRow, wnd, txt)
 		if c.FocusedTextInput == txt {
 			xc, yc, wc, hc := txt.CalculateCursorPos()
-			wnd.buffer.CreateRect(x+xc, y+yc, wc, hc, red)
+			DrawRect(buffer, id+"cursor", x+xc, y+yc, wc, hc, red)
 		}
-		//wnd.buffer.CreateRect(ws.X, ws.Y, ws.W, ws.H, 0, draw.StraightCorners, 0, whiteColor, wnd.DefaultClip())
-		//wnd.buffer.CreateText(x, y, txt, *c.font, draw.NewClip(draw.EmptyClip, ws.ClipRect))
+		//DrawRect(buffer, id+"-background", ws.X, ws.Y, ws.W, ws.H, whiteColor)
+		buffer.SeparateBuffer(0, clip)
+		c.DrawText(x, y, txt, c.font.TextureId, buffer, clip)
 	})
 	if c.hoverBehavior(wnd, utils.NewRectS(ws.ClipRect)) && c.io.MouseClicked[0] {
+		txtGl.ToggleUpdate()
 		txtGl.CursorInd = len(txtGl.Chars)
 		c.FocusedTextInput = txtGl
 		pos := c.io.MouseClickedPos[0]
@@ -792,58 +798,58 @@ func TextInput(id string, w, h float32, message *string) {
 }
 
 // MultiLineTextInput TODO: Add want input flag
-func MultiLineTextInput(id string, message *string) {
-	c := ctx()
-	wnd := c.windowStack.Peek()
-	var txtGl *widgets.Text
-	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
-	ws := c.subWidgetSpaceHelperWithBackground(wnd, wnd.buffer, id, x, y, wnd.mainWidgetSpace.W-(x-wnd.x)-wnd.mainWidgetSpace.verticalScrollbar.w, 200, 0, 0, softGreen, draw.StraightCorners, Scrollable|ShowScrollbar|FitWidth, func() {
-		currWs := wnd.currentWidgetSpace
-		x, y, isRow := currWs.getCursorPosition()
-		msg, key := c.getTextInput()
-		txt, hovered := c.inputTextHelper(id, x, y, currWs.W, msg, message, key, widgets.Editable|Selectable|widgets.MultiLine)
-		txtGl = txt
-		if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
-			wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
-		}
-		y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
-
-		if hovered {
-			//txt.SetBackGroundColor(softGreen)
-			//txt.CurrentColor = [4]float32{167, 200, 100, 1}
-		} else {
-			txt.CurrentColor = whiteColor
-			txt.SetBackGroundColor(transparent)
-		}
-
-		//txt.CurrentColor = [4]float32{255, 255, 255, 1}
-
-		wnd.endWidget(x, y, isRow, txt)
-		//ws := wnd.currentWidgetSpace
-		if c.FocusedTextInput == txt {
-			//xc, yc, wc, hc := txt.CalculateCursorPos()
-			//wnd.buffer.CreateRect(x+xc, y+yc, wc, hc, 0,
-			//	draw.StraightCorners, 0, red, wnd.DefaultClip())
-		}
-		//wnd.buffer.CreateRect(ws.X, ws.Y, ws.W, ws.H, 0, draw.StraightCorners, 0, whiteColor, wnd.DefaultClip())
-		//wnd.buffer.CreateText(x, y, txt, *c.font, draw.NewClip(draw.EmptyClip, ws.ClipRect))
-	})
-	if c.hoverBehavior(wnd, utils.NewRectS(ws.ClipRect)) && c.io.MouseClicked[0] {
-		txtGl.CursorInd = len(txtGl.Chars)
-		c.FocusedTextInput = txtGl
-		pos := c.io.MouseClickedPos[0]
-		startFounded := false
-		for _, line := range txtGl.Lines {
-			if pos.Y > line.StartY+y && pos.Y <= line.StartY+y+line.Height && !startFounded {
-				startFounded = true
-				txtGl.CursorInd = len(line.Text)
-			}
-		}
-	}
-
-	wnd.currentWidgetSpace.AddVirtualHeight(ws.H)
-	wnd.addCursor(ws.W, ws.H)
-}
+//func MultiLineTextInput(id string, message *string) {
+//	c := ctx()
+//	wnd := c.windowStack.Peek()
+//	var txtGl *widgets.Text
+//	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
+//	ws := c.subWidgetSpaceHelperWithBackground(wnd, wnd.buffer, id, x, y, wnd.mainWidgetSpace.W-(x-wnd.x)-wnd.mainWidgetSpace.verticalScrollbar.w, 200, 0, 0, softGreen, draw.StraightCorners, Scrollable|ShowScrollbar|FitWidth, func() {
+//		currWs := wnd.currentWidgetSpace
+//		x, y, isRow := currWs.getCursorPosition()
+//		msg, key := c.getTextInput()
+//		txt, hovered := c.InputTexEX(id, x, y, currWs.W, msg, message, key, widgets.Editable|Selectable|widgets.MultiLine)
+//		txtGl = txt
+//		if y+txt.Height() > wnd.y && y <= wnd.y+wnd.h {
+//			wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
+//		}
+//		y += wnd.currentWidgetSpace.resolveRowAlign(txt.Height())
+//
+//		if hovered {
+//			//txt.SetBackGroundColor(softGreen)
+//			//txt.CurrentColor = [4]float32{167, 200, 100, 1}
+//		} else {
+//			txt.CurrentColor = whiteColor
+//			txt.SetBackGroundColor(transparent)
+//		}
+//
+//		//txt.CurrentColor = [4]float32{255, 255, 255, 1}
+//
+//		wnd.endWidget(x, y, isRow, txt)
+//		//ws := wnd.currentWidgetSpace
+//		if c.FocusedTextInput == txt {
+//			//xc, yc, wc, hc := txt.CalculateCursorPos()
+//			//wnd.buffer.CreateRect(x+xc, y+yc, wc, hc, 0,
+//			//	draw.StraightCorners, 0, red, wnd.DefaultClip())
+//		}
+//		//wnd.buffer.CreateRect(ws.X, ws.Y, ws.W, ws.H, 0, draw.StraightCorners, 0, whiteColor, wnd.DefaultClip())
+//		//wnd.buffer.CreateText(x, y, txt, *c.font, draw.NewClip(draw.EmptyClip, ws.ClipRect))
+//	})
+//	if c.hoverBehavior(wnd, utils.NewRectS(ws.ClipRect)) && c.io.MouseClicked[0] {
+//		txtGl.CursorInd = len(txtGl.Chars)
+//		c.FocusedTextInput = txtGl
+//		pos := c.io.MouseClickedPos[0]
+//		startFounded := false
+//		for _, line := range txtGl.Lines {
+//			if pos.Y > line.StartY+y && pos.Y <= line.StartY+y+line.Height && !startFounded {
+//				startFounded = true
+//				txtGl.CursorInd = len(line.Text)
+//			}
+//		}
+//	}
+//
+//	wnd.currentWidgetSpace.AddVirtualHeight(ws.H)
+//	wnd.addCursor(ws.W, ws.H)
+//}
 
 func TextFitted(id string, w float32, msg string) {
 	c := ctx()
@@ -972,16 +978,12 @@ func ClipRect(wnd *Window) draw.ClipRectCompose {
 	if wnd.currentWidgetSpace.flags&IgnoreClipping != 0 {
 		clip = draw.NewClip(draw.EmptyClip, wnd.currentWidgetSpace.ClipRect)
 	} else {
-		//clip = draw.NewClip(draw.EmptyClip, wnd.currentWidgetSpace.ClipRect)
 		clip = wnd.DefaultClip()
 	}
 	return clip
 }
 
 func (c *UiContext) DrawImage(x, y float32, img *widgets.Image, buffer *draw.CmdBuffer, clip draw.ClipRectCompose) {
-	//img.LastVert, img.LastInd, img.LastVertCount, img.Last = buffer.CreateRect(x, y, img.Width(), img.Height(), red)
-	//buffer.SendToBuffer(img.LastVert, img.LastInd, img.LastVertCount, 0)
-
 	if img.Updated {
 		img.LastVert, img.LastInd, img.LastVertCount, img.Last = buffer.CreateTexturedRect(x, y,
 			img.Width(), img.Height(), img.TexId, img.TexCoords, img.Color())
@@ -990,7 +992,6 @@ func (c *UiContext) DrawImage(x, y float32, img *widgets.Image, buffer *draw.Cmd
 	} else {
 		buffer.SendToBuffer(img.LastVert, img.LastInd, img.LastVertCount, img.Last)
 	}
-	//fmt.Println(img.LastVert[:9])
 	buffer.SeparateBuffer(img.TexId, clip)
 }
 
@@ -1088,6 +1089,8 @@ func Text(id string, msg string, flag widgets.TextFlag) {
 	txt, x, y, isRow, out := c.TextEX(ws, id, msg, 0, flag)
 	if out {
 		return
+	} else if flag&Selectable != 0 {
+		wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
 	}
 
 	hovered := IsHovered(wnd, ws, txt)
@@ -1464,7 +1467,7 @@ func (c *UiContext) subWidgetSpaceHelperEx(wnd *Window, buff *draw.CmdBuffer, id
 	ws.cursorY = y
 	ws.cursorX = x
 
-	wnd.debugDraw(ws.X, ws.Y, ws.W, ws.H, red)
+	//wnd.debugDraw(ws.X, ws.Y, ws.W, ws.H, red)
 
 	outOfWindow := false
 	if wnd != nil {
@@ -1529,12 +1532,15 @@ func (c *UiContext) subWidgetSpaceHelperEx(wnd *Window, buff *draw.CmdBuffer, id
 
 	if flags&FillBackground != 0 {
 		if texId == 0 {
+			DrawRect(buff, id+"back", ws.X, ws.Y, ws.W, ws.H, clr)
 			//buff.CreateRect(ws.X, ws.Y, ws.W, ws.H, radius, shape, 0, clr, wnd.DefaultClip())
 		} else {
 			//TODO: Add textured rect method
 			//wnd.buffer.CreateTexturedRect()
 		}
+		//buff.SeparateBuffer(0, ws.Clip())
 	}
+
 	widgFunc()
 	ws.checkVerScroll()
 
@@ -1733,6 +1739,7 @@ func (c *UiContext) solveTextSelection(wnd *Window) {
 							t.StartInd = ind
 							startFounded = true
 							c.SelectedTextStart = t
+
 							if t == c.FocusedTextInput {
 								t.CursorInd = ind
 								t.CursorLine = t.StartLine
@@ -1947,6 +1954,7 @@ func EndWindow() {
 			c.SelectedTextEnd = nil
 			c.SelectedText = ""
 			wnd.textRegions = []utils.Rect{}
+			ToggleAllWidgets()
 		}
 	}
 

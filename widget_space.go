@@ -46,6 +46,8 @@ type WidgetSpace struct {
 	tabStack utils.Stack[*widgets.TabBar]
 
 	flags WidgetSpaceFlag
+
+	//textRegions []utils.Rect
 }
 
 var defScrollWidth float32 = 10
@@ -80,6 +82,7 @@ func newWidgetSpace(id string, x, y, w, h float32, flags WidgetSpaceFlag) *Widge
 			[4]float32{150, 155, 155, 1}),
 		rowStack: utils.NewStack[*widgets.HybridLayout](),
 		tabStack: utils.NewStack[*widgets.TabBar](),
+		//textRegions: []utils.Rect{},
 	}
 	return &vs
 }

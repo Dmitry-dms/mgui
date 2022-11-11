@@ -209,7 +209,7 @@ func main() {
 		//customWindow()
 
 		if ui.GetIo().IsKeyPressed(ui.GuiKey_Space) {
-			fmt.Println(ui.GET_CONTEXT().ActiveWidgetSpaceId)
+			fmt.Println(ui.GET_CONTEXT())
 			opendW = true
 		}
 
@@ -247,6 +247,7 @@ var opendW = true
 var counter = 0
 var dur int64 = 0
 var tmer = time.NewTicker(1 * time.Second)
+var sh = false
 
 func firstWindow() {
 	//ui.GlobalWidgetSpace("glob", 200, 200, 300, 300, ui.IgnoreClipping|ui.Resizable, func() {
@@ -259,24 +260,30 @@ func firstWindow() {
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Text("text-ttp-2", "Обычная картинка \nи это то-же 1", ui.Selectable)
 	//uiCtx.Text("text-ttp-3", "Обычная картинка и \nэто то-же 2", ui.Editable)
-	start := time.Now()
+	//start := time.Now()
 	//ui.SubWidgetSpace("dfапаd", 200, 300, ui.Scrollable, func() {
-	//	for i := 0; i < 5; i++ {
-	//		ui.Image(fmt.Sprint(i)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
-	//	}
+	//for i := 0; i < 5; i++ {
+	//	ui.Image(fmt.Sprint(i)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
+	//}
 	//	//ui.Image(fmt.Sprint(12)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
 	//	ui.Text(fmt.Sprint(2131)+"-txt", "dfdgfg - это текст-\"рыба\"", ui.Selectable)
 	//})
 	//for i := 0; i < 100; i++ {
 	//	//fmt.Println(tex.TexCoords)
-	ui.Image("-iyimgy5g", 100, 100, tex.TextureId, tex.TexCoords)
-	ui.Text("-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
-	//}
+	if ui.Image("-iyimgy5g", 100, 100, tex.TextureId, tex.TexCoords) {
+		sh = !sh
+	}
+	ui.Text("h787-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
+	////}
 	ui.Slider("slds", &tW, 100, 1200)
-	elapsed := time.Since(start)
-	dur += elapsed.Microseconds()
-	counter++
-	ui.TextFitted("text-ttваы-1", tW, "Съешь ещё этих мягких французских булочек")
+	//elapsed := time.Since(start)
+	//dur += elapsed.Microseconds()
+	//counter++
+	if sh {
+		ui.TextFitted("text-ttваы-1", tW, "Съешь ещё этих мягких французских булочек")
+	}
+	ui.Image("-iyimgydf5g", 100, 100, tex2.TextureId, tex2.TexCoords)
+	ui.TextInput("tirey21", 300, 50, &msg1)
 	//fmt.Printf("Widgets took %d \n", int(dur)/counter)
 	{
 		//ui.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
