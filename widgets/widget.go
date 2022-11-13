@@ -7,6 +7,7 @@ type Widget interface {
 	Width() float32
 	BoundingBox() [4]float32
 	ToggleUpdate()
+	RenderInfo() ([]float32, []int32, int, int)
 }
 type PaddingType uint
 
@@ -22,16 +23,28 @@ type baseWidget struct {
 	id              string
 	boundingBox     [4]float32
 	BackgroundColor [4]float32
-	LastVert        []float32
-	LastInd         []int32
-	Last            int
-	LastVertCount   int
+
+	Vertices []float32
+	Indices  []int32
+	// LastBufferIndex shows the value of the buffer.LastInd counter after
+	// the widget has been sent to the buffer. It prevents errors from appearing when constructing the indices buffer.
+	// For example, the first widget was drawn, and in the next frame, a second widget was drawn in front of
+	// this widget, which indicates that the first widget needs to be redrawn.
+	// But at the stage of drawing the second widget, there is no access to the Updated flag of the first one.
+	// Therefore, it is necessary to monitor the status of the indexes buffer.
+	LastBufferIndex int
+	VertCount       int
 	Updated         bool
 }
 
 func (b *baseWidget) ToggleUpdate() {
 	b.Updated = true
 }
+
+func (b *baseWidget) RenderInfo() ([]float32, []int32, int, int) {
+	return b.Vertices, b.Indices, b.VertCount, b.LastBufferIndex
+}
+
 func (b *baseWidget) height() float32 {
 	return b.boundingBox[3]
 }

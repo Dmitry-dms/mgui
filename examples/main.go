@@ -45,7 +45,8 @@ func startPprof() {
 }
 
 func main() {
-	startPprof()
+	//startPprof()
+
 	err := glfw.Init()
 	if err != nil {
 		panic(err)
@@ -209,7 +210,7 @@ func main() {
 		//customWindow()
 
 		if ui.GetIo().IsKeyPressed(ui.GuiKey_Space) {
-			fmt.Println(ui.GET_CONTEXT())
+			//fmt.Println(ui.GET_CONTEXT())
 			opendW = true
 		}
 
@@ -231,7 +232,7 @@ func main() {
 var ish bool = false
 var tW float32 = 400
 var message = "hello \nworld"
-var msg1 = "hello"
+var msg1 = "h"
 
 func customWindow() {
 	ui.BeginCustomWindow("cstm wnd", 500, 500, 650, 650,
@@ -255,7 +256,9 @@ func firstWindow() {
 	//	ui.Text("-txt", "dfdgfg - это текст-\"рыба\"", ui.Selectable)
 	//})
 	//ui.GlobalImage("glob", 100, 100, 100, 100, tex.TextureId, tex.TexCoords)
-	ui.BeginWindow("The first window", &opendW)
+	ui.BeginWindow("Th", &opendW)
+	ui.TextInput("tirey21", 300, 50, &msg1)
+
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Text("text-ttp-2", "Обычная картинка \nи это то-же 1", ui.Selectable)
@@ -273,7 +276,7 @@ func firstWindow() {
 	if ui.Image("-iyimgy5g", 100, 100, tex.TextureId, tex.TexCoords) {
 		sh = !sh
 	}
-	ui.Text("h787-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
+	//ui.Text("h787-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
 	////}
 	ui.Slider("slds", &tW, 100, 1200)
 	//elapsed := time.Since(start)
@@ -283,7 +286,8 @@ func firstWindow() {
 		ui.TextFitted("text-ttваы-1", tW, "Съешь ещё этих мягких французских булочек")
 	}
 	ui.Image("-iyimgydf5g", 100, 100, tex2.TextureId, tex2.TexCoords)
-	ui.TextInput("tirey21", 300, 50, &msg1)
+
+	//ui.MultiLineTextInput("inputr23", &message)
 	//fmt.Printf("Widgets took %d \n", int(dur)/counter)
 	{
 		//ui.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)

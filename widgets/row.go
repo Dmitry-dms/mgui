@@ -89,3 +89,6 @@ func (r *HybridLayout) UpdatePosition(pos [4]float32) {
 func (r *HybridLayout) BoundingBox() [4]float32 {
 	return [4]float32{}
 }
+func (r *HybridLayout) RenderInfo() ([]float32, []int32, int, int) {
+	return nil, nil, 0, 0
+}

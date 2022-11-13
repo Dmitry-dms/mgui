@@ -6,7 +6,7 @@ const (
 	GuiKey_NamedKey_BEGIN = 512
 	// Keyboard
 	GuiKey_None GuiKey = 0
-	GuiKey_Tab         = GuiKey_NamedKey_BEGIN + iota // == ImGuiKey_NamedKey_BEGIN
+	GuiKey_Tab         = GuiKey_NamedKey_BEGIN + iota
 	GuiKey_LeftArrow
 	GuiKey_RightArrow
 	GuiKey_UpArrow
@@ -18,7 +18,6 @@ const (
 	GuiKey_Insert
 	GuiKey_Delete
 	GuiKey_Backspace
-	GuiKey_Space
 	GuiKey_Enter
 	GuiKey_Escape
 	GuiKey_LeftCtrl
@@ -30,6 +29,7 @@ const (
 	GuiKey_RightAlt
 	GuiKey_RightSuper
 	GuiKey_Menu
+	GuiKey_Space
 	GuiKey_0
 	GuiKey_1
 	GuiKey_2
@@ -117,7 +117,7 @@ const (
 type ModKey int
 
 func IsCommandKey(key GuiKey) bool {
-	if key >= 514 && key <= 537 || key >= 574 && key <= 601 {
+	if key >= 514 && key < 537 || key >= 574 && key <= 601 {
 		return true
 	}
 	return false

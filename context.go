@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"github.com/Dmitry-dms/mgui/cache"
 	"github.com/Dmitry-dms/mgui/draw"
 	"github.com/Dmitry-dms/mgui/fonts"
@@ -369,13 +368,13 @@ func EndFrame(size [2]float32) {
 		}
 	}
 
-	if c.FocusedTextInput != nil {
-		if utils.PointOutsideRect(c.io.MouseClickedPos[0], utils.NewRectS(c.FocusedTextInput.BoundingBox())) {
-			ToggleAllWidgets()
-			fmt.Println("outside")
-			c.FocusedTextInput = nil
-		}
-	}
+	//if c.FocusedTextInput != nil {
+	//	if utils.PointOutsideRect(c.io.MouseClickedPos[0], utils.NewRectS(c.FocusedTextInput.BoundingBox())) {
+	//		ToggleAllWidgets()
+	//		fmt.Println("outside - ", c.FocusedTextInput.WidgetId())
+	//		c.FocusedTextInput = nil
+	//	}
+	//}
 
 	c.WantScrollFocusWidgetSpaceLastId = c.WantScrollFocusWidgetSpaceId
 	c.WantScrollFocusWidgetSpaceId = ""

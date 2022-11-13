@@ -18,7 +18,7 @@ type CmdBuffer struct {
 	Indices  []int32
 
 	VertCount int
-	lastInd   int
+	LastInd   int
 	lastElems int
 
 	//InnerWindowSpace [4]float32
@@ -61,7 +61,7 @@ func (c *CmdBuffer) Clear() {
 	c.Indices = c.Indices[:0]
 	c.DrawCalls = c.DrawCalls[:0]
 	c.VertCount = 0
-	c.lastInd = 0
+	c.LastInd = 0
 	c.ofs = 0
 	c.lastElems = 0
 }
@@ -112,27 +112,32 @@ func (c *CmdBuffer) CreateButtonT(x, y float32, btn *widgets.TextButton, font fo
 }
 func (c *CmdBuffer) CreateText(x, y float32, txt *widgets.Text, scale float32, font fonts.Font) ([]float32, []int32, int, int) {
 	vert, ind, count := c.text(txt, font, x, c.displaySize.Y-y, scale, txt.CurrentColor)
-	return vert, ind, count, c.lastInd
+	return vert, ind, count, c.LastInd
+}
+
+func (c *CmdBuffer) CheckIndicesChange(w widgets.Widget) bool {
+	vert, _, _, l := w.RenderInfo()
+	return l != (c.LastInd + len(vert)/9)
 }
 
 func (c *CmdBuffer) CreateTexturedRect(x, y, w, h float32, texId uint32, coords, clr [4]float32) ([]float32, []int32, int, int) {
 	vert, ind, count := c.rectangle(x, c.displaySize.Y-y, w, h, texId, coords, clr)
-	return vert, ind, count, c.lastInd
+	return vert, ind, count, c.LastInd
 }
 
 func (c *CmdBuffer) CreateRoundedRect(x, y, w, h float32, radius int, shape RoundedRectShape, clr [4]float32) ([]float32, []int32, int, int) {
 	info := c.roundedRectangle(x, c.displaySize.Y-y, w, h, radius, shape, clr)
-	return info.Vertices, info.Indices, info.VertCount, c.lastInd
+	return info.Vertices, info.Indices, info.VertCount, c.LastInd
 }
 
 //func (c *CmdBuffer) DrawRect(x, y, w, h float32, clr [4]float32) {
 //	vert, ind, count := c.rectangle(x, c.displaySize.Y-y, w, h, 0, emptyCoords, clr)
-//	c.SendToBuffer(vert, ind, count, c.lastInd)
+//	c.SendToBuffer(vert, ind, count, c.Indices)
 //}
 
 func (c *CmdBuffer) CreateRect(x, y, w, h float32, clr [4]float32) ([]float32, []int32, int, int) {
 	vert, ind, count := c.rectangle(x, c.displaySize.Y-y, w, h, 0, emptyCoords, clr)
-	return vert, ind, count, c.lastInd
+	return vert, ind, count, c.LastInd
 }
 func checkSliceForNull(s [4]float32) bool {
 	return (s[0] == 0) && (s[1] == 0) && (s[2] == 0) && (s[3] == 0)
@@ -236,7 +241,7 @@ func (c *CmdBuffer) SendToBuffer(vert []float32, indices []int32, vertCount int,
 	c.Indices = append(c.Indices, indices...)
 	c.VertCount += vertCount
 	if ind != 0 {
-		c.lastInd = ind
+		c.LastInd = ind
 	}
 }
 
@@ -277,7 +282,7 @@ func (c *CmdBuffer) addCharacter(x, y float32, scale float32, texId uint32, info
 	ux0, uy0 := info.TexCoords[0].X, info.TexCoords[0].Y
 	ux1, uy1 := info.TexCoords[1].X, info.TexCoords[1].Y
 
-	ind0 := c.lastInd
+	ind0 := c.LastInd
 	ind1 := ind0 + 1
 	ind2 := ind1 + 1
 	offset := 0
@@ -298,7 +303,7 @@ func (c *CmdBuffer) addCharacter(x, y float32, scale float32, texId uint32, info
 	ind[4] = int32(ind2)
 	ind[5] = int32(last)
 
-	c.lastInd = last + 1
+	c.LastInd = last + 1
 	//c.Render(vert, ind, 6)
 	return vert, ind, 6
 }
@@ -312,7 +317,7 @@ func (c *CmdBuffer) rectangle(x, y, w, h float32, texId uint32, coords [4]float3
 	ux0, uy0 = coords[2], coords[3]
 	ux1, uy1 = coords[0], coords[1]
 
-	ind0 := c.lastInd
+	ind0 := c.LastInd
 	ind1 := ind0 + 1
 	ind2 := ind1 + 1
 	offset := 0
@@ -333,7 +338,7 @@ func (c *CmdBuffer) rectangle(x, y, w, h float32, texId uint32, coords [4]float3
 	ind[4] = int32(ind2)
 	ind[5] = int32(last)
 
-	c.lastInd = last + 1
+	c.LastInd = last + 1
 	//fmt.Println(ind)
 	//c.Render(vert, ind, 6)
 	return vert, ind, 6
@@ -382,7 +387,7 @@ const (
 )
 
 func (c *CmdBuffer) Arc(x, y, radius float32, steps int, sector CircleSector, clr [4]float32) ([]float32, []int32, int) {
-	ind0 := c.lastInd
+	ind0 := c.LastInd
 	ind1 := ind0 + 1
 	ind2 := ind1 + 1
 	offset := 0
@@ -485,7 +490,7 @@ func (c *CmdBuffer) Arc(x, y, radius float32, steps int, sector CircleSector, cl
 	ind[indOffset+1] = int32(ind1)
 	ind[indOffset+2] = int32(ind2)
 
-	c.lastInd = ind2 + 1
+	c.LastInd = ind2 + 1
 
 	return vert, ind, (numV + 1) * 3
 }
@@ -505,21 +510,21 @@ func (c *CmdBuffer) lineArc(x, y, radius, steps float32, sector CircleSector, cl
 
 func (c *CmdBuffer) CreateLineStrip(p []utils.Vec2, clr [4]float32) ([]float32, []int32, int, int) {
 	vert, ind, count := c.lineStrip(p, clr)
-	return vert, ind, count, c.lastInd
+	return vert, ind, count, c.LastInd
 }
 
 func (c *CmdBuffer) CreateLine(startX, startY, endX, endY float32, clr [4]float32) ([]float32, []int32, int, int) {
 	vert, ind, count := c.line(startX, startY, endX, endY, clr)
-	return vert, ind, count, c.lastInd
+	return vert, ind, count, c.LastInd
 }
 func (c *CmdBuffer) CreateBezierQuad(startX, startY, supportX, supportY, endX, endY, steps float32, clr [4]float32) ([]float32, []int32, int, int) {
 	vert, ind, count := c.bezierQuad(startX, startY, supportX, supportY, endX, endY, steps, clr)
-	return vert, ind, count, c.lastInd
+	return vert, ind, count, c.LastInd
 }
 
 // TODO: line drawing needs an optimization because now, each line takes 1 draw call. Maybe one buffer that will hold all lines?
 func (c *CmdBuffer) line(startX, startY, endX, endY float32, clr [4]float32) ([]float32, []int32, int) {
-	ind0 := c.lastInd
+	ind0 := c.LastInd
 	offset := 0
 	ind := make([]int32, 2)      // 1 - point
 	vert := make([]float32, 9*2) //polygon
@@ -530,11 +535,11 @@ func (c *CmdBuffer) line(startX, startY, endX, endY float32, clr [4]float32) ([]
 	fillVertices(vert, &offset, endX, endY, 0, 0, 0, clr)
 	ind[1] = int32(ind0)
 
-	c.lastInd = ind0 + 1
+	c.LastInd = ind0 + 1
 	return vert, ind, 2
 }
 func (c *CmdBuffer) lineStrip(points []utils.Vec2, clr [4]float32) ([]float32, []int32, int) {
-	ind0 := c.lastInd
+	ind0 := c.LastInd
 	offset := 0
 	pointsLen := len(points)
 	ind := make([]int32, pointsLen)      // 1 - point
@@ -544,7 +549,7 @@ func (c *CmdBuffer) lineStrip(points []utils.Vec2, clr [4]float32) ([]float32, [
 		ind[i] = int32(ind0)
 		ind0++
 	}
-	c.lastInd = ind0
+	c.LastInd = ind0
 	return vert, ind, pointsLen
 }
 
@@ -571,7 +576,7 @@ var steps = 30
 
 func (c *CmdBuffer) CreateRoundedBorderRectangle(x, y, w, h float32, radius int, clr [4]float32) ([]float32, []int32, int, int) {
 	info := c.roundedLineRectangle(x, y, w, h, 10, radius, AllRounded, clr)
-	return info.Vertices, info.Indices, info.VertCount, c.lastInd
+	return info.Vertices, info.Indices, info.VertCount, c.LastInd
 }
 func (c *CmdBuffer) roundedLineRectangle(x, y, w, h, steps float32, radius int, shape RoundedRectShape, clr [4]float32) (info primitiveInfo) {
 
