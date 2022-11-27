@@ -6,6 +6,7 @@ import (
 	"github.com/Dmitry-dms/mgui/fonts"
 	"github.com/Dmitry-dms/mgui/sprite_packer"
 	"github.com/Dmitry-dms/mgui/utils"
+	"github.com/Dmitry-dms/mgui/widgets"
 	"github.com/go-gl/gl/v4.2-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"image"
@@ -100,10 +101,10 @@ func main() {
 
 	//sheet := sprite_packer.NewSpriteSheet(512, "mgui")
 	////ui.uiCtx.UploadFont("C:/Windows/Fonts/times.ttf", 14)
-	fontName := "C:/Windows/Fonts/arial.ttf"
+	//fontName := "C:/Windows/Fonts/arial.ttf"
 	fontName2 := "C:/Windows/Fonts/times.ttf"
+	//f2, _ := ui.UploadFont(fontName, 18, 157.0, 32, 256)
 	f, _ := ui.UploadFont(fontName2, 24, 157.0, 32, 256)
-	f2, _ := ui.UploadFont(fontName, 18, 157.0, 32, 256)
 	//d2.Pix = []uint8{}
 	//d.Pix = []uint8{}
 	//d = nil
@@ -136,7 +137,7 @@ func main() {
 	t2 := UploadRGBATextureFromMemory(sheet.Image())
 	sheet.ClearImage()
 	f.TextureId = t2.TextureId
-	f2.TextureId = t2.TextureId
+	//f2.TextureId = t2.TextureId
 
 	//tex.TexCoords = ms.TextCoords
 	//tex2.TextureId = t2.TextureId
@@ -170,12 +171,12 @@ func main() {
 		}
 	}
 	//
-	rr, _ := sheet.GetGroup(f2.Filepath)
+	rr, _ := sheet.GetGroup(f.Filepath)
 
 	for _, info := range rr.Contents {
 		if info != nil {
 			ll := []rune(info.Id)
-			char := f2.GetCharacter(ll[0])
+			char := f.GetCharacter(ll[0])
 			char.TexCoords = [2]utils.Vec2{{info.TextCoords[0], info.TextCoords[1]},
 				{info.TextCoords[2], info.TextCoords[3]}}
 		}
@@ -207,10 +208,10 @@ func main() {
 
 		firstWindow()
 		//secondWindow()
-		//customWindow()
+		customWindow()
 
 		if ui.GetIo().IsKeyPressed(ui.GuiKey_Space) {
-			//fmt.Println(ui.GET_CONTEXT())
+			fmt.Println(ui.GET_CONTEXT().SelectedText)
 			opendW = true
 		}
 
@@ -282,10 +283,25 @@ func firstWindow() {
 	//elapsed := time.Since(start)
 	//dur += elapsed.Microseconds()
 	//counter++
+	ui.Text("#eывsddddr", "Съешь ещё этих мягких французских булочек да выпей чаю", ui.DefaultTextFlag)
+	ui.Text("#sdeывr", "the quick brown fox jumps over the lazy dog", ui.DefaultTextFlag)
 	if sh {
 		ui.TextFitted("text-ttваы-1", tW, "Съешь ещё этих мягких французских булочек")
 	}
+	if ui.Button("ASsfdffb") {
+		fmt.Println("btn clicked")
+	}
+	ui.Row("roe23", widgets.VerticalAlign, func() {
+		ui.Text("#eывr", "the quick", ui.Selectable)
+		ui.Image("#im4kjdg4664tht", 100, 100, tex2.TextureId, tex.TexCoords)
+	})
 	ui.Image("-iyimgydf5g", 100, 100, tex2.TextureId, tex2.TexCoords)
+	if ui.GET_CONTEXT().ActiveWidget == "-iyimgy5g" {
+		ui.Tooltip("ttp-1", func() {
+			ui.Text("text-ttp-1", "Обычная картинка, которая  ничего не делает", ui.DefaultTextFlag)
+			ui.Image("-iy675g", 100, 100, tex2.TextureId, tex2.TexCoords)
+		})
+	}
 
 	//ui.MultiLineTextInput("inputr23", &message)
 	//fmt.Printf("Widgets took %d \n", int(dur)/counter)

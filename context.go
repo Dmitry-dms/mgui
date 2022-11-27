@@ -41,6 +41,8 @@ type UiContext struct {
 	ActiveWidgetSpace                *WidgetSpace
 	FocusedWidgetSpace               *WidgetSpace
 
+	// For now, it uses as mark which tells there is something that must be handled inside global buffer.
+	// For example GlobalWidgetSpace.
 	CurrentGlobalWidgetSpace *WidgetSpace
 
 	//SelectableText *widgets.Text

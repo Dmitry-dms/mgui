@@ -58,6 +58,9 @@ func (b *Button) Color() [4]float32 {
 }
 
 func (b *Button) SetColor(clr [4]float32) {
-	//b.CurrentColor = clr
+	if clr == b.BackgroundColor {
+		return
+	}
+	b.ToggleUpdate()
 	b.BackgroundColor = clr
 }

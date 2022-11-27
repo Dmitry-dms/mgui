@@ -83,7 +83,7 @@ func (f *Font) CalculateTextBounds(text string, scale float32) (width, height fl
 	currentLine.Text = []CombinedCharInfo{}
 	currentLine.StartX = dx
 	currentLine.StartY = 0
-	currentLine.Height = baseline
+	currentLine.Height = float32(f.Face.Metrics().Height.Ceil())
 	currentLine.Width = 0
 	for i, r := range tmp {
 		info := f.GetCharacter(r)
@@ -123,19 +123,19 @@ func (f *Font) CalculateTextBounds(text string, scale float32) (width, height fl
 				maxDescend = d
 			}
 		}
-		//if info.Rune == ' ' {
-		//	chars[i] = CombinedCharInfo{
-		//		Char:  *info,
-		//		Pos:   utils.Vec2{X: xPos, Y: yPos},
-		//		Width: float32(info.Width),
-		//	}
-		//} else {
-		chars[i] = CombinedCharInfo{
-			Char:  *info,
-			Pos:   utils.Vec2{X: xPos, Y: yPos},
-			Width: float32(info.LeftBearing + info.Width + info.RightBearing),
+		if info.Rune == ' ' {
+			chars[i] = CombinedCharInfo{
+				Char:  *info,
+				Pos:   utils.Vec2{X: xPos, Y: yPos},
+				Width: float32(info.Width),
+			}
+		} else {
+			chars[i] = CombinedCharInfo{
+				Char:  *info,
+				Pos:   utils.Vec2{X: xPos, Y: yPos},
+				Width: float32(info.LeftBearing + info.Width + info.RightBearing),
+			}
 		}
-		//}
 		currentLine.Text = append(currentLine.Text, chars[i])
 		currentLine.Msg += string(r)
 

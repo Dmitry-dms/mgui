@@ -22,6 +22,7 @@ const (
 	Right
 )
 
+// NewTextButton TODO(@Dmitry-dms): Should TextButton exist or just use Text and Button together when needed?
 func NewTextButton(id string, x, y, w, h float32,
 	text string, tPos []fonts.CombinedCharInfo, align TextAlign, pad PaddingType, style *styles.Style) *TextButton {
 	tb := TextButton{
@@ -31,19 +32,9 @@ func NewTextButton(id string, x, y, w, h float32,
 		pad:   pad,
 	}
 	txt := NewText("", text, x, y, w, h, tPos, nil, style, Default)
-	//var btnW, btnH float32
-	//switch pad {
-	//case LeftPadding | RightPadding:
-	//	btnW += style.Padding
-	//case TopPadding | BotPadding:
-	//	btnH += style.Padding
-	//case AllPadding:
-	//	btnW += 2 * style.Padding
-	//	btnH += 2 * style.Padding
-	//}
 
 	btn := NewButton("", x, y, 2*style.Padding+w, 2*style.Padding+h, style.BtnColor)
-	//btn := NewButton("", x, y, btnW+w, btnH+h, style.BtnColor)
+
 	tb.Button = btn
 	tb.Text = txt
 
@@ -52,7 +43,8 @@ func NewTextButton(id string, x, y, w, h float32,
 	return &tb
 }
 func (tb *TextButton) ToggleUpdate() {
-
+	tb.Text.ToggleUpdate()
+	tb.Button.ToggleUpdate()
 }
 func (tb *TextButton) RenderInfo() ([]float32, []int32, int, int) {
 	return tb.Button.RenderInfo()

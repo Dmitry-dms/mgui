@@ -43,8 +43,8 @@ func (i *Image) SetColor(clr [4]float32) {
 	if clr == i.BackgroundColor {
 		return
 	}
+	i.ToggleUpdate()
 	i.BackgroundColor = clr
-	i.Updated = true
 }
 
 func (i *Image) BoundingBox() [4]float32 {
