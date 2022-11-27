@@ -33,7 +33,7 @@ func NewTextButton(id string, x, y, w, h float32,
 	}
 	txt := NewText("", text, x, y, w, h, tPos, nil, style, Default)
 
-	btn := NewButton("", x, y, 2*style.Padding+w, 2*style.Padding+h, style.BtnColor)
+	btn := NewButton("", x, y, 2*style.AllPadding+w, 2*style.AllPadding+h, style.BtnColor)
 
 	tb.Button = btn
 	tb.Text = txt
@@ -55,15 +55,15 @@ func (tb *TextButton) UpdateTextPos(x, y float32) {
 	var xNew, yNew float32
 	switch tb.align {
 	case Center:
-		xNew = ((tb.Width() - tb.Text.Width() - tb.style.Padding*2) / 2) + tb.style.Padding
+		xNew = ((tb.Width() - tb.Text.Width() - tb.style.AllPadding*2) / 2) + tb.style.AllPadding
 	case Left:
-		xNew = tb.style.Padding
+		xNew = tb.style.AllPadding
 	case Right:
-		xNew = tb.Width() - tb.Text.Width() - tb.style.Padding*3
+		xNew = tb.Width() - tb.Text.Width() - tb.style.AllPadding*3
 	}
-	yNew = tb.style.Padding
-	if tb.Width() <= tb.Text.Width()+tb.style.Padding*3 {
-		xNew = tb.style.Padding
+	yNew = tb.style.AllPadding
+	if tb.Width() <= tb.Text.Width()+tb.style.AllPadding*3 {
+		xNew = tb.style.AllPadding
 	}
 	tb.Text.UpdatePosition([4]float32{x + xNew, y + yNew, tb.Text.Width(), tb.Text.Height()})
 }

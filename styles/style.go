@@ -7,7 +7,7 @@ type Style struct {
 
 	// widget space
 	Margin                float32
-	Padding               float32
+	AllPadding            float32
 	TopMargin, BotMargin  float32
 	LeftMargin            float32
 	WidgSpaceDividerColor [4]float32
@@ -32,13 +32,26 @@ type Style struct {
 	SliderBtnColor [4]float32
 	SliderHeight   float32
 	SliderBtnWidth float32
+
+	Padding Padding
+}
+
+type Padding struct {
+	Left, Top, Right, Bottom float32
+}
+
+func (p Padding) WidthSum() float32 {
+	return p.Left + p.Right
+}
+func (p Padding) HeightSum() float32 {
+	return p.Top + p.Bottom
 }
 
 var (
 	DefaultStyle = Style{
 		TransparentColor: [4]float32{0, 0, 0, 0},
 		Margin:           10,
-		Padding:          10,
+		AllPadding:       10,
 		TopMargin:        10,
 		BotMargin:        10,
 		LeftMargin:       10,
@@ -56,5 +69,11 @@ var (
 		TabBtnColor:           [4]float32{44, 81, 132, 1},
 		TabBtnActiveColor:     [4]float32{51, 105, 173, 1},
 		WidgSpaceDividerColor: [4]float32{70, 70, 79, 1},
+		Padding: Padding{
+			Left:   0,
+			Top:    0,
+			Right:  0,
+			Bottom: 0,
+		},
 	}
 )

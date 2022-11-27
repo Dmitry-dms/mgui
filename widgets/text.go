@@ -1,7 +1,6 @@
 package widgets
 
 import (
-	"fmt"
 	"github.com/Dmitry-dms/mgui/fonts"
 	"github.com/Dmitry-dms/mgui/styles"
 )
@@ -83,7 +82,6 @@ func (t *Text) CursorHelper(dx int) {
 			}
 		}
 	}
-	fmt.Println(t.CursorLine, t.CursorInd)
 }
 
 func (t *Text) CalculateCursorPos() (x, y, w, h float32) {
@@ -104,12 +102,11 @@ func (t *Text) CalculateCursorPos() (x, y, w, h float32) {
 
 func (t *Text) UpdatePosition(pos [4]float32) {
 	t.updatePosition(pos)
-	//t.Base.boundingBox = pos
 }
 
 func (t *Text) SetWH(width, height float32) {
 	t.boundingBox[2] = width
-	t.boundingBox[3] = height //+ float32(t.Padding)
+	t.boundingBox[3] = height //+ float32(t.AllPadding)
 }
 func (t *Text) SetTextColor(clr [4]float32) {
 	if clr == t.CurrentColor {

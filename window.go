@@ -411,25 +411,45 @@ func (c *UiContext) getWidget(id string, f func() widgets.Widget) widgets.Widget
 	return widg
 }
 
-func ButtonT(id string, msg string) bool {
+//func ResolvePadding(x, y float32) (padLeft, padTop float32, box [4]float32) {
+//	c := ctx()
+//	padLeft = c.CurrentStyle.Padding.Left
+//	padTop = c.CurrentStyle.Padding.Top
+//
+//}
+
+func TextButton(id string, msg string) bool {
 	c := ctx()
-	wnd := c.windowStack.Peek()
-	var tBtn *widgets.TextButton
-	var hovered, clicked bool
-	x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
-
-	tBtn, hovered, clicked = c.textButton(id, wnd, msg, x, y, widgets.Center)
-	if hovered {
-		tBtn.Button.SetColor(c.CurrentStyle.BtnHoveredColor)
-	} else if tBtn.Active() {
-		tBtn.Button.SetColor(c.CurrentStyle.BtnActiveColor)
-	} else {
-		tBtn.Button.SetColor(c.CurrentStyle.BtnColor)
+	wnd, ws := c.IsWidgetSpaceAvailable()
+	if ws == nil {
+		fmt.Println("Can't find any widget spaces")
+		return false
 	}
+	txt, _, _, isRow, _ := c.TextEX(ws, id+"-text", msg, 0, DefaultTextFlag)
+	padding := c.CurrentStyle.Padding
+	var clicked, hovered bool
+	btn, x, y, isRow, out := c.ButtonEX(ws, id+"-btn", txt.Width()+padding.WidthSum(), txt.Height()+padding.HeightSum())
+	if out {
+		return false
+	}
+	hovered = IsHovered(wnd, ws, btn)
+	clicked = hovered && c.io.MouseClicked[0]
+	if hovered {
+		btn.SetColor(c.CurrentStyle.BtnHoveredColor)
+		if clicked {
+			btn.ChangeActive()
+		}
+	} else if btn.IsActive {
+		btn.SetColor(c.CurrentStyle.BtnActiveColor)
+	} else {
+		btn.SetColor(c.CurrentStyle.BtnColor)
+	}
+	clip, buffer := ws.UpdateWidgetPosition(x, y, isRow, wnd, btn)
+	c.DrawButton(x, y, btn, buffer, clip)
 
-	clip := wnd.endWidget(x, y, isRow, tBtn)
-	wnd.buffer.CreateButtonT(x, y, tBtn, *c.font, clip)
+	txt.UpdatePosition([4]float32{x + padding.Left, y + padding.Top, txt.Width(), txt.Height()})
 
+	c.DrawText(x+padding.Left, y+padding.Top, txt, c.font.TextureId, buffer, clip)
 	return clicked
 }
 
@@ -1409,7 +1429,7 @@ func Selection(id string, index *int, data []string, texId uint32, texCoords [4]
 			wnd.endWidget(x2-s.Height(), y2, isRow2, img)
 
 			//txt, _ := c.textHelper(data[*index]+"--"+id, x, y, 0, data[*index], widgets.Default)
-			//wnd.buffer.CreateText(x+c.CurrentStyle.Padding, y+(s.Height()-txt.Height())/2, txt,
+			//wnd.buffer.CreateText(x+c.CurrentStyle.AllPadding, y+(s.Height()-txt.Height())/2, txt,
 			//	*c.font, draw.NewClip(draw.EmptyClip, [4]float32{x, y, s.Width(), s.Height()}))
 			//wnd.buffer.CreateTexturedRect(x2-s.Height(), y2, img.Width(), img.Height(), texId, texCoords, img.Color(), wnd.DefaultClip())
 			if clicked {
@@ -1705,7 +1725,7 @@ func TabBar(id string, widgFunc func()) {
 		//		}
 		//
 		//		tbtn.Text.CurrentColor = whiteColor
-		//		tbtn.SetHeight(tbtn.Height() - (tbtn.Height() - tbtn.Text.Height()) + c.CurrentStyle.Padding)
+		//		tbtn.SetHeight(tbtn.Height() - (tbtn.Height() - tbtn.Text.Height()) + c.CurrentStyle.AllPadding)
 		//		clip := wnd.endWidget(x, y, false, tbtn)
 		//		//wnd.buffer.CreateRect(x, y, tbtn.Width(), tbtn.Height(), 10, draw.TopRect, 0, tbtn.Color(), clip)
 		//		//wnd.buffer.CreateRect(x, y, tbtn.Width(), tbtn.Height(), 10, draw.TopRect, 0, tbtn.Color(), clip)

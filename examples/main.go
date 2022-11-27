@@ -268,10 +268,7 @@ func firstWindow() {
 			ui.Image("-iy67sdsd5g", 100, 100, tex2.TextureId, tex2.TexCoords)
 		})
 	})
-	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
-	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
-	//uiCtx.Text("text-ttp-2", "Обычная картинка \nи это то-же 1", ui.Selectable)
-	//uiCtx.Text("text-ttp-3", "Обычная картинка и \nэто то-же 2", ui.Editable)
+
 	//start := time.Now()
 	//ui.SubWidgetSpace("dfапаd", 200, 300, ui.Scrollable, func() {
 	//for i := 0; i < 5; i++ {
@@ -313,12 +310,14 @@ func firstWindow() {
 
 	//ui.MultiLineTextInput("inputr23", &message)
 	//fmt.Printf("Widgets took %d \n", int(dur)/counter)
+	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
+	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	{
 		//ui.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
 		//ui.Text("text-ttp-4", "Lorem Ipsum - это текст-\"рыба\", часто \nиспользуемый в печати и вэб-дизайне.", ui.Selectable)
 		//uiCtx.Text("tlorem", "Lorem Ipsum - это текст-\"рыба\", часто \nиспользуемый в печати и вэб-дизайне. Lorem Ipsum является \nстандартной \"рыбой\" для текстов на \nлатинице с начала XVI века.", ui.Selectable)
 		//ui.Button("fd")
-		//ui.ButtonT("ds", "Sas")
+		//ui.TextButton("ds", "Sas")
 		//ui.Row("slider-row", func() {
 		//ui.Slider("slds", &tW, 100, 1200)
 		//	ui.Text("sl-tex", fmt.Sprint(tW), ui.DefaultTextFlag)
@@ -329,8 +328,12 @@ func firstWindow() {
 		//uiCtx.Bezier()
 		//uiCtx.Line(200)
 		//uiCtx.Line(400)
-
-		//if uiCtx.ButtonT("Нажать", "Press") {
+		ui.PushStyleVar1f(ui.FontScale, 0.75)
+		ui.PushStyleVar1f(ui.AllPadding, 10)
+		if ui.TextButton("Нажать", "Готово") {
+			println("clicked btn text")
+		}
+		ui.PopStyleVar()
 		//	//	ish = !ish
 		//	//
 		//}
@@ -396,7 +399,7 @@ func firstWindow() {
 		//uiCtx.VSpace("#hhvs1")
 		//uiCtx.Image("#imgj4", tex2)
 		//uiCtx.VSpace("#dfff234")
-		//uiCtx.ButtonT("sad3r3", "Hello!?")
+		//uiCtx.TextButton("sad3r3", "Hello!?")
 		//uiCtx.Text("#t3dgdgdf", "world!", 24)
 		//uiCtx.TabBar("bar1", func() {
 		//	uiCtx.TabItem("Config", func() {

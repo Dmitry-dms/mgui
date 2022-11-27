@@ -202,7 +202,7 @@ func checkSliceForNull(s [4]float32) bool {
 //		}
 //	case Text:
 //		t := cmd.Text
-//		c.Text(t.Widget, t.Font, t.X, c.displaySize.Y-(t.Y+float32(t.Padding)), t.Scale, t.Clr)
+//		c.Text(t.Widget, t.Font, t.X, c.displaySize.Y-(t.Y+float32(t.AllPadding)), t.Scale, t.Clr)
 //		c.SeparateBuffer(t.Font.TextureId, clip) // don't forget to slice buffer
 //	case BezierQuad:
 //		b := cmd.Bezier

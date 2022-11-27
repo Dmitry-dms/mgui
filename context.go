@@ -417,11 +417,17 @@ type StyleVar1f uint
 const (
 	ButtonActiveColor StyleVar4f = iota
 	ButtonHoveredColor
+	Padding
 )
 
 const (
 	Margin StyleVar1f = iota
 	FontScale
+	AllPadding
+	LeftPadding
+	TopPadding
+	RightPadding
+	BottomPadding
 )
 
 func PushStyleVar1f(v StyleVar1f, val float32) {
@@ -435,6 +441,21 @@ func PushStyleVar1f(v StyleVar1f, val float32) {
 		c.CurrentStyle.Margin = val
 	case FontScale:
 		c.CurrentStyle.FontScale = val
+	case LeftPadding:
+		c.CurrentStyle.Padding.Left = val
+	case RightPadding:
+		c.CurrentStyle.Padding.Right = val
+	case TopPadding:
+		c.CurrentStyle.Padding.Top = val
+	case BottomPadding:
+		c.CurrentStyle.Padding.Bottom = val
+	case AllPadding:
+		c.CurrentStyle.Padding = styles.Padding{
+			Left:   val,
+			Top:    val,
+			Right:  val,
+			Bottom: val,
+		}
 	}
 	c.StyleChanged = true
 	c.styleChangeCounter++
