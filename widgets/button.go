@@ -33,8 +33,11 @@ func (b *Button) ChangeActive() {
 }
 
 func (b *Button) SetWidth(w float32) {
-	//b.BoundingBox[2] = w
+	if w == b.width() {
+		return
+	}
 	b.boundingBox[2] = w
+	b.ToggleUpdate()
 }
 func (b *Button) SetHeight(h float32) {
 	b.boundingBox[3] = h

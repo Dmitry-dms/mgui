@@ -260,6 +260,14 @@ func firstWindow() {
 	ui.BeginWindow("Th", &opendW)
 	ui.TextInput("tirey21", 300, 50, &msg1)
 
+	ui.TreeNode("trdsee1", "Configuration", func() {
+		ui.Text("text-ttdsdp-1", "Обычная картинка, которая  ничего не делает", ui.DefaultTextFlag)
+
+		ui.TreeNode("treesds1yuy2", "Настройки", func() {
+			ui.Text("#sdeыdsdsвr", "the quick brown fox jumps over the lazy dog", ui.DefaultTextFlag)
+			ui.Image("-iy67sdsd5g", 100, 100, tex2.TextureId, tex2.TexCoords)
+		})
+	})
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	//uiCtx.Text("text-ttp-2", "Обычная картинка \nи это то-же 1", ui.Selectable)

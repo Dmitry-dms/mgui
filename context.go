@@ -421,9 +421,11 @@ const (
 
 const (
 	Margin StyleVar1f = iota
+	FontScale
 )
 
-func (c *UiContext) PushStyleVar1f(v StyleVar1f, val float32) {
+func PushStyleVar1f(v StyleVar1f, val float32) {
+	c := ctx()
 	if c.styleChangeCounter == 0 {
 		prev := *c.CurrentStyle
 		c.prevStyle = &prev
@@ -431,6 +433,8 @@ func (c *UiContext) PushStyleVar1f(v StyleVar1f, val float32) {
 	switch v {
 	case Margin:
 		c.CurrentStyle.Margin = val
+	case FontScale:
+		c.CurrentStyle.FontScale = val
 	}
 	c.StyleChanged = true
 	c.styleChangeCounter++
@@ -450,7 +454,8 @@ func (c *UiContext) PushStyleVar4f(v StyleVar4f, m [4]float32) {
 	c.StyleChanged = true
 	c.styleChangeCounter++
 }
-func (c *UiContext) PopStyleVar() {
+func PopStyleVar() {
+	c := ctx()
 	c.CurrentStyle = c.prevStyle
 	c.styleChangeCounter = 0
 }

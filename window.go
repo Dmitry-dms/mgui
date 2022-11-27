@@ -1162,7 +1162,7 @@ func Text(id string, msg string, flag widgets.TextFlag) {
 }
 func (c *UiContext) DrawText(x, y float32, txt *widgets.Text, texid uint32, buffer *draw.CmdBuffer, clip draw.ClipRectCompose) {
 	if txt.Updated || buffer.CheckIndicesChange(txt) {
-		txt.Vertices, txt.Indices, txt.VertCount, txt.LastBufferIndex = buffer.CreateText(x, y, txt, 1, *c.font)
+		txt.Vertices, txt.Indices, txt.VertCount, txt.LastBufferIndex = buffer.CreateText(x, y, txt, txt.Scale, *c.font)
 		buffer.SendToBuffer(txt.Vertices, txt.Indices, txt.VertCount, 0)
 		txt.Updated = false
 	} else {
@@ -1253,45 +1253,47 @@ func (c *UiContext) hoverBehavior(wnd *Window, rect utils.Rect) bool {
 
 func TreeNode(id string, msg string, widgFunc func()) bool {
 	c := ctx()
-	wnd := c.windowStack.Peek()
-	var tBtn *widgets.TextButton
-	var _, hovered bool
-	x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
 
-	tBtn = c.getWidget(id, func() widgets.Widget {
-		w, h, _, p := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
-		return widgets.NewTextButton(id, x, y, w, h, msg, p, widgets.Left, widgets.AllPadding, c.CurrentStyle)
-	}).(*widgets.TextButton)
-
-	// logic
-	{
-		hovered = c.hoverBehavior(wnd, utils.NewRectS(tBtn.BoundingBox()))
-		if hovered {
-			c.setActiveWidget(tBtn.Id)
-			tBtn.Button.SetColor(c.CurrentStyle.BtnHoveredColor)
-			if c.io.MouseClicked[0] {
-				tBtn.ChangeActive()
-			}
-		} else if tBtn.Active() {
-			tBtn.Button.SetColor(c.CurrentStyle.BtnActiveColor)
-		} else {
-			tBtn.Button.SetColor(c.CurrentStyle.BtnColor)
-		}
-		//clicked = c.io.MouseClicked[0] && hovered
+	wnd, ws := c.IsWidgetSpaceAvailable()
+	if ws == nil {
+		fmt.Println("Can't find any widget spaces")
+		return false
 	}
-	//
-	tBtn.SetWidth(wnd.w)
-	clip := wnd.endWidget(x, y, isRow, tBtn)
-	wnd.buffer.CreateButtonT(x, y, tBtn, *c.font, clip)
+	PushStyleVar1f(FontScale, 0.75)
+	txt, _, _, isRow, _ := c.TextEX(ws, id+"-header", msg, 0, DefaultTextFlag)
+	PopStyleVar()
+	var clicked, hovered bool
+	btn, x, y, isRow, out := c.ButtonEX(ws, id+"-btn", wnd.w, txt.Height())
+	if out {
+		return false
+	}
+	hovered = IsHovered(wnd, ws, btn)
+	clicked = hovered && c.io.MouseClicked[0]
+	if hovered {
+		btn.SetColor(c.CurrentStyle.BtnHoveredColor)
+		if clicked {
+			btn.ChangeActive()
+		}
+	} else if btn.IsActive {
+		btn.SetColor(c.CurrentStyle.BtnActiveColor)
+	} else {
+		btn.SetColor(c.CurrentStyle.BtnColor)
+	}
+	btn.SetWidth(wnd.w)
+	clip, buffer := ws.UpdateWidgetPosition(x, y, isRow, wnd, btn)
+	c.DrawButton(x, y, btn, buffer, clip)
 
-	if tBtn.Active() {
+	txt.UpdatePosition([4]float32{x, y, txt.Width(), txt.Height()})
+
+	c.DrawText(x, y, txt, c.font.TextureId, buffer, clip)
+	if btn.IsActive {
 		x += 50
-		ws := c.subWidgetSpaceHelper(wnd, wnd.buffer, id, x, y+tBtn.Height(), 0, 0, NotScrollable|Resizable, widgFunc)
+		ws := c.subWidgetSpaceHelper(wnd, wnd.buffer, id, x, y+btn.Height(), 0, 0, NotScrollable|Resizable, widgFunc)
 		wnd.currentWidgetSpace.AddVirtualHeight(ws.H)
 		wnd.addCursor(ws.W, ws.H)
 	}
 
-	return tBtn.Active()
+	return clicked
 }
 
 func (c *UiContext) textButton(id string, wnd *Window, msg string, x, y float32, align widgets.TextAlign) (tBtn *widgets.TextButton, hovered, clicked bool) {
