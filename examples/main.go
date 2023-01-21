@@ -6,7 +6,6 @@ import (
 	"github.com/Dmitry-dms/mgui/fonts"
 	"github.com/Dmitry-dms/mgui/sprite_packer"
 	"github.com/Dmitry-dms/mgui/utils"
-	"github.com/Dmitry-dms/mgui/widgets"
 	"github.com/go-gl/gl/v4.2-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"image"
@@ -208,10 +207,10 @@ func main() {
 
 		firstWindow()
 		//secondWindow()
-		customWindow()
+		//customWindow()
 
 		if ui.GetIo().IsKeyPressed(ui.GuiKey_Space) {
-			fmt.Println(ui.GET_CONTEXT().SelectedText)
+			fmt.Println(ui.GET_CONTEXT().ActiveWidgetSpaceId)
 			opendW = true
 		}
 
@@ -258,17 +257,17 @@ func firstWindow() {
 	//})
 	//ui.GlobalImage("glob", 100, 100, 100, 100, tex.TextureId, tex.TexCoords)
 	ui.BeginWindow("Th", &opendW)
-	ui.TextInput("tirey21", 300, 50, &msg1)
+	//ui.TextInput("tirey21", 300, 50, &msg1)
 
-	ui.TreeNode("trdsee1", "Configuration", func() {
-		ui.Text("text-ttdsdp-1", "Обычная картинка, которая  ничего не делает", ui.DefaultTextFlag)
-
-		ui.TreeNode("treesds1yuy2", "Настройки", func() {
-			ui.Text("#sdeыdsdsвr", "the quick brown fox jumps over the lazy dog", ui.DefaultTextFlag)
-			ui.Image("-iy67sdsd5g", 100, 100, tex2.TextureId, tex2.TexCoords)
-		})
-	})
-
+	//ui.TreeNode("trdsee1", "Configuration", func() {
+	//	ui.Text("teп-ttdsdp-1", "Обычная картинка, которая  ничего не делает", ui.DefaultTextFlag)
+	//	ui.Image("-iyрпен66g", 100, 100, tex2.TextureId, tex2.TexCoords)
+	//	ui.TreeNode("treesds1yuy2", "Настройки", func() {
+	//		ui.Text("#sпрsdsвr", "the quick brown fox jumps over the lazy dog", ui.DefaultTextFlag)
+	//		ui.Image("-i335ен66g", 100, 100, tex2.TextureId, tex2.TexCoords)
+	//	})
+	//})
+	//ui.Selection("selhh-1", &selection, sle, arrowDown.TextureId, arrowDown.TexCoords)
 	//start := time.Now()
 	//ui.SubWidgetSpace("dfапаd", 200, 300, ui.Scrollable, func() {
 	//for i := 0; i < 5; i++ {
@@ -288,29 +287,29 @@ func firstWindow() {
 	//elapsed := time.Since(start)
 	//dur += elapsed.Microseconds()
 	//counter++
-	ui.Text("#eывsddddr", "Съешь ещё этих мягких французских булочек да выпей чаю", ui.DefaultTextFlag)
-	ui.Text("#sdeывr", "the quick brown fox jumps over the lazy dog", ui.DefaultTextFlag)
-	if sh {
-		ui.TextFitted("text-ttваы-1", tW, "Съешь ещё этих мягких французских булочек")
-	}
-	if ui.Button("ASsfdffb") {
-		fmt.Println("btn clicked")
-	}
-	ui.Row("roe23", widgets.VerticalAlign, func() {
-		ui.Text("#eывr", "the quick", ui.Selectable)
-		ui.Image("#im4kjdg4664tht", 100, 100, tex2.TextureId, tex.TexCoords)
-	})
-	ui.Image("-iyimgydf5g", 100, 100, tex2.TextureId, tex2.TexCoords)
-	if ui.GET_CONTEXT().ActiveWidget == "-iyimgy5g" {
-		ui.Tooltip("ttp-1", func() {
-			ui.Text("text-ttp-1", "Обычная картинка, которая  ничего не делает", ui.DefaultTextFlag)
-			ui.Image("-iy675g", 100, 100, tex2.TextureId, tex2.TexCoords)
-		})
-	}
+	//ui.Text("#eывsddddr", "Съешь ещё этих мягких французских булочек да выпей чаю", ui.DefaultTextFlag)
+	//ui.Text("#sdeывr", "the quick brown fox jumps over the lazy dog", ui.DefaultTextFlag)
+	//if sh {
+	//	ui.TextFitted("text67о-1", tW, "Съешь ещё этих мягких французских булочек")
+	//}
+	//if ui.Button("ASsfdffb") {
+	//	fmt.Println("btn clicked")
+	//}
+	//ui.Row("roe23", widgets.VerticalAlign, func() {
+	//	ui.Text("#eывr", "the quick", ui.Selectable)
+	//	ui.Image("#im4kjdg4664tht", 100, 100, tex2.TextureId, tex.TexCoords)
+	//})
+	//ui.Image("-iyimgydf5g", 100, 100, tex2.TextureId, tex2.TexCoords)
+	//if ui.GET_CONTEXT().ActiveWidget == "-iyimgy5g" {
+	//	ui.Tooltip("ttp-1", func() {
+	//		ui.Text("text-ttp-1", "Обычная картинка, которая  ничего не делает", ui.DefaultTextFlag)
+	//		ui.Image("-iy675g", 100, 100, tex2.TextureId, tex2.TexCoords)
+	//	})
+	//}
 
-	//ui.MultiLineTextInput("inputr23", &message)
+	ui.MultiLineTextInput("inputr23", &message)
 	//fmt.Printf("Widgets took %d \n", int(dur)/counter)
-	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
+
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
 	{
 		//ui.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
@@ -333,7 +332,7 @@ func firstWindow() {
 		if ui.TextButton("Нажать", "Готово") {
 			println("clicked btn text")
 		}
-		ui.PopStyleVar()
+		//ui.PopStyleVar()
 		//	//	ish = !ish
 		//	//
 		//}

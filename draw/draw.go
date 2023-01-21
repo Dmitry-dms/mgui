@@ -246,10 +246,14 @@ func (c *CmdBuffer) SendToBuffer(vert []float32, indices []int32, vertCount int,
 }
 
 func (c *CmdBuffer) CreateBorderBox(x, y, w, h, lineWidth float32, clr [4]float32) {
-	c.CreateRect(x, y, w, lineWidth, clr)
-	c.CreateRect(x+w-lineWidth, y, lineWidth, h, clr)
-	c.CreateRect(x, y, lineWidth, h, clr)
-	c.CreateRect(x, y+h-lineWidth, w, lineWidth, clr)
+	//c.CreateRect(x, y, w, lineWidth, clr)
+	//c.CreateRect(x+w-lineWidth, y, lineWidth, h, clr)
+	//c.CreateRect(x, y, lineWidth, h, clr)
+	//c.CreateRect(x, y+h-lineWidth, w, lineWidth, clr)
+	c.SendToBuffer(c.CreateRect(x, y, w, lineWidth, clr))
+	c.SendToBuffer(c.CreateRect(x+w-lineWidth, y, lineWidth, h, clr))
+	c.SendToBuffer(c.CreateRect(x, y, lineWidth, h, clr))
+	c.SendToBuffer(c.CreateRect(x, y+h-lineWidth, w, lineWidth, clr))
 }
 
 func (c *CmdBuffer) text(text *widgets.Text, font fonts.Font, x, y float32, scale float32, clr [4]float32) (vert []float32, ind []int32, cnt int) {

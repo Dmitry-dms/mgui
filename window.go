@@ -454,18 +454,13 @@ func TextButton(id string, msg string) bool {
 }
 
 func Slider(id string, i *float32, min, max float32) {
-	//c := ctx()
-	//wnd := c.windowStack.Peek()
-	var slider *widgets.Slider
-	//var hovered, clicked bool
-	//x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
 	c := ctx()
 	wnd, ws := c.IsWidgetSpaceAvailable()
 	if ws == nil {
 		fmt.Println("Can't find any widget spaces")
 		return
 	}
-	slider = c.getWidget(id, func() widgets.Widget {
+	slider := c.getWidget(id, func() widgets.Widget {
 		return widgets.NewSlider(id, 0, 0, 200, 50, min, max, c.CurrentStyle)
 	}).(*widgets.Slider)
 	x, y, isRow, out := c.WidgetEX(ws, slider.Width(), slider.Height())
@@ -696,38 +691,6 @@ func (c *UiContext) ClearTextSelection(wnd *Window) {
 	wnd.textRegions = []utils.Rect{}
 }
 
-func (c *UiContext) tHelper(id string, x, y, w float32, msg string, flag widgets.TextFlag) (txt *widgets.Text, hovered bool) {
-
-	wnd := c.windowStack.Peek()
-	txt = c.getWidget(id, func() widgets.Widget {
-		//if flag&widgets.SplitChars != 0 {
-		//	msg = c.FitTextToWidth(x, w, msg)
-		//} else if flag&widgets.SplitWords != 0 {
-		//	numChars := int(math.Floor(float64(w / c.font.XCharAdvance())))
-		//	msg = wrap(msg, numChars)
-		//}
-		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
-		return widgets.NewText(id, msg, x, y, width, h, chars, l, c.CurrentStyle, flag)
-
-	}).(*widgets.Text)
-	hovered = c.hoverBehavior(wnd, utils.NewRectS(txt.BoundingBox()))
-	if txt.LastWidth != w {
-		if flag&widgets.SplitChars != 0 {
-			msg = c.FitTextToWidth(x, w, msg)
-		} else if flag&widgets.SplitWords != 0 {
-			numChars := int(math.Floor(float64(w / c.font.XCharAdvance())))
-			msg = wrap(msg, numChars)
-		}
-		width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
-		txt.Lines = l
-		txt.Chars = chars
-		txt.Message = msg
-		txt.SetWH(width, h)
-		txt.LastWidth = w
-	}
-	return
-}
-
 func (c *UiContext) InputTexEX(ws *WidgetSpace, wnd *Window, id string, inputMsg string, inpmsg *string, key GuiKey, flag widgets.TextFlag) (txt *widgets.Text, x, y float32, isRow, outOfWs bool) {
 	txt = c.getWidget(id, func() widgets.Widget {
 		width, h, l, chars := c.font.CalculateTextBounds(*inpmsg, c.CurrentStyle.FontScale)
@@ -781,9 +744,6 @@ func (c *UiContext) InputTexEX(ws *WidgetSpace, wnd *Window, id string, inputMsg
 		//ToggleAllWidgets()
 	}
 	return
-}
-func (c *UiContext) textHelper(id string, x, y, w float32, msg string, flag widgets.TextFlag) (txt *widgets.Text, hovered bool) {
-	return c.tHelper(id, x, y, w, msg, flag)
 }
 
 func (c *UiContext) getTextInput() (string, GuiKey) {
@@ -931,20 +891,6 @@ func TextFitted(id string, w float32, msg string) {
 
 func (wnd *Window) DefaultClip() draw.ClipRectCompose {
 	return draw.NewClip(wnd.currentWidgetSpace.ClipRect, wnd.mainWidgetSpace.ClipRect)
-}
-
-func (c *UiContext) imageHelper(id string, x, y, w, h float32, f func() *widgets.Image) (img *widgets.Image, hovered, clicked bool) {
-	wnd := c.windowStack.Peek()
-
-	img = f()
-	hovered = c.hoverBehavior(wnd, utils.NewRectS(img.BoundingBox()))
-	{
-		if hovered {
-			c.setActiveWidget(img.WidgetId())
-		}
-		clicked = c.io.MouseClicked[0] && hovered
-	}
-	return
 }
 
 func CalculateWidgetInfo(w, h float32, ws *WidgetSpace) (x, y float32, isRow, outWindow bool) {
@@ -1123,7 +1069,13 @@ func IsHovered(wnd *Window, ws *WidgetSpace, w widgets.Widget) bool {
 	if wnd == nil {
 		return utils.PointInRect(c.io.MousePos, utils.NewRectS(w.BoundingBox())) && c.ActiveWidgetSpaceId == ws.id
 	} else {
-		return c.hoverBehavior(wnd, utils.NewRectS(w.BoundingBox())) && c.ActiveWidgetSpaceId == ws.id
+		hovered := c.hoverBehavior(wnd, utils.NewRectS(w.BoundingBox()))
+		if hovered {
+			//fmt.Println(w.WidgetId(), " ", w.BoundingBox())
+		}
+		//box := w.BoundingBox()
+		//DrawRect(c.globalBuffer, w.WidgetId()+"debugdsd", box[0]-15, box[1]-15, box[2]+10, box[3]+10, whiteColor)
+		return hovered && c.ActiveWidgetSpaceId == ws.id
 	}
 }
 
@@ -1280,26 +1232,40 @@ func TreeNode(id string, msg string, widgFunc func()) bool {
 		return false
 	}
 	PushStyleVar1f(FontScale, 0.75)
-	txt, _, _, isRow, _ := c.TextEX(ws, id+"-header", msg, 0, DefaultTextFlag)
+	txt, _, _, isRow, out := c.TextEX(ws, id+"-header", msg, 0, DefaultTextFlag)
 	PopStyleVar()
-	var clicked, hovered bool
-	btn, x, y, isRow, out := c.ButtonEX(ws, id+"-btn", wnd.w, txt.Height())
 	if out {
+		// Prevent cursor changing, because by default if widget is outside widget space,
+		// cursor automatically increments. But in this case TreeNode is a composite
+		// widget, so we don't want to lose correct positions inside TreeNode.
+		// TODO(@Dmitry-dms): Illustrate this problem.
+		ws.addCursor(-txt.Width(), -txt.Height())
+		ws.AddVirtualWH(-txt.Width(), -txt.Height())
+	}
+
+	var clicked, hovered bool
+	btn, x, y, isRow, out2 := c.ButtonEX(ws, id+"-btn", wnd.w, txt.Height())
+	if out2 && !btn.IsActive {
 		return false
+	} else if out2 && btn.IsActive {
+		ws.addCursor(-btn.Width(), -btn.Height())
+		ws.AddVirtualWH(-btn.Width(), -btn.Height())
 	}
-	hovered = IsHovered(wnd, ws, btn)
-	clicked = hovered && c.io.MouseClicked[0]
-	if hovered {
-		btn.SetColor(c.CurrentStyle.BtnHoveredColor)
-		if clicked {
-			btn.ChangeActive()
+	{
+		hovered = IsHovered(wnd, ws, btn)
+		clicked = hovered && c.io.MouseClicked[0]
+		if hovered {
+			btn.SetColor(c.CurrentStyle.BtnHoveredColor)
+			if clicked {
+				btn.ChangeActive()
+			}
+		} else if btn.IsActive {
+			btn.SetColor(c.CurrentStyle.BtnActiveColor)
+		} else {
+			btn.SetColor(c.CurrentStyle.BtnColor)
 		}
-	} else if btn.IsActive {
-		btn.SetColor(c.CurrentStyle.BtnActiveColor)
-	} else {
-		btn.SetColor(c.CurrentStyle.BtnColor)
+		btn.SetWidth(wnd.w)
 	}
-	btn.SetWidth(wnd.w)
 	clip, buffer := ws.UpdateWidgetPosition(x, y, isRow, wnd, btn)
 	c.DrawButton(x, y, btn, buffer, clip)
 
@@ -1308,9 +1274,9 @@ func TreeNode(id string, msg string, widgFunc func()) bool {
 	c.DrawText(x, y, txt, c.font.TextureId, buffer, clip)
 	if btn.IsActive {
 		x += 50
-		ws := c.subWidgetSpaceHelper(wnd, wnd.buffer, id, x, y+btn.Height(), 0, 0, NotScrollable|Resizable, widgFunc)
-		wnd.currentWidgetSpace.AddVirtualHeight(ws.H)
-		wnd.addCursor(ws.W, ws.H)
+		childWs := c.subWidgetSpaceHelper(wnd, wnd.buffer, id, x, y+btn.Height(), 0, 0, NotScrollable|Resizable, widgFunc)
+		ws.addCursor(childWs.W, childWs.H)
+		ws.AddVirtualWH(childWs.W, childWs.H)
 	}
 
 	return clicked
@@ -1406,33 +1372,47 @@ func (c *UiContext) setActiveWidget(id string) {
 
 func Selection(id string, index *int, data []string, texId uint32, texCoords [4]float32) {
 	c := ctx()
-	wnd := c.windowStack.Peek()
+	wnd, ws := c.IsWidgetSpaceAvailable()
+	if ws == nil {
+		fmt.Println("Can't find any widget spaces")
+		return
+	}
 	var s *widgets.Selection
-
 	// Need to use WS because text may not fit into ButtonEX, so it should be clipped
 	SubWidgetSpace(id+"---", 0, 0, Resizable|NotScrollable, func() {
 		Row(id+"row--", widgets.VerticalAlign, func() {
-			x, y, isRow := wnd.currentWidgetSpace.getCursorPosition()
+			originX, originY, isRow := wnd.currentWidgetSpace.getCursorPosition()
 			s = c.getWidget(id, func() widgets.Widget {
-				return widgets.NewSelection(id, x, y, 300, 40)
+				return widgets.NewSelection(id, originX, originY, 300, 40)
 			}).(*widgets.Selection)
 
-			//wnd.buffer.CreateRect(x, y, s.Width(), s.Height(), 0, draw.StraightCorners, 0, whiteColor, wnd.DefaultClip())
+			//x2, y2, _ := wnd.currentWidgetSpace.getCursorPosition()
+			img, _, imgY, _, out := c.ImageEX(ws, id+"sel-arrow", s.Height(), s.Height(), texId, texCoords, whiteColor)
+			if out {
+				return
+			}
+			//clip := wnd.endWidget(originX+s.Width()-imgX, imgY, isRow, img)
+			img.UpdatePosition([4]float32{originX + s.Width() - img.Width(), imgY, img.Width(), img.Height()})
+			hovered := IsHovered(wnd, ws, img)
+			clicked := hovered && c.io.MouseClicked[0]
+			DrawRect(wnd.buffer, id+"sel-rect", originX, originY, s.Width(), s.Height(), whiteColor)
 			wnd.buffer.SeparateBuffer(0, wnd.DefaultClip())
-			wnd.endWidget(x, y, isRow, s)
+			wnd.endWidget(originX, originY, isRow, s)
+			//img, _, clicked := c.imageHelper(id+"arrow", x2, y2, s.Height(), s.Height(), func() *widgets.Image {
+			//	return nil
+			//})
+			//
+			c.DrawImage(originX+s.Width()-img.Width(), imgY, img, wnd.buffer, wnd.DefaultClip())
 
-			x2, y2, isRow2 := wnd.currentWidgetSpace.getCursorPosition()
-			img, _, clicked := c.imageHelper(id+"arrow", x2, y2, s.Height(), s.Height(), func() *widgets.Image {
-				return nil
-			})
-
-			wnd.endWidget(x2-s.Height(), y2, isRow2, img)
-
+			txt, _, _, _, _ := c.TextEX(ws, data[*index]+"--"+id, data[*index], 0, DefaultTextFlag)
+			txt.UpdatePosition([4]float32{originX, originY, txt.Width(), txt.Height()})
+			c.DrawText(originX, originY, txt, c.font.TextureId, wnd.buffer, wnd.DefaultClip())
 			//txt, _ := c.textHelper(data[*index]+"--"+id, x, y, 0, data[*index], widgets.Default)
 			//wnd.buffer.CreateText(x+c.CurrentStyle.AllPadding, y+(s.Height()-txt.Height())/2, txt,
 			//	*c.font, draw.NewClip(draw.EmptyClip, [4]float32{x, y, s.Width(), s.Height()}))
 			//wnd.buffer.CreateTexturedRect(x2-s.Height(), y2, img.Width(), img.Height(), texId, texCoords, img.Color(), wnd.DefaultClip())
 			if clicked {
+				fmt.Println("clcd")
 				s.Opened = true
 				c.setActiveWidget(id)
 			}
@@ -1596,7 +1576,8 @@ func (c *UiContext) subWidgetSpaceHelperEx(wnd *Window, buff *draw.CmdBuffer, id
 
 	var hoveredWs, actWind, scrollable bool
 	if wnd != nil {
-		hoveredWs = c.hoverBehavior(wnd, utils.NewRectS(ws.ClipRect))
+		//hoveredWs = c.hoverBehavior(wnd, utils.NewRectS(ws.ClipRect))
+		hoveredWs = c.hoverBehavior(wnd, utils.NewRect(ws.X, ws.Y, ws.W, ws.H))
 		scrollable = c.io.ScrollY != 0
 		actWind = c.ActiveWindow == wnd && c.HoveredWindow == wnd
 	} else {
