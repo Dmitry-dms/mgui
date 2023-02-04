@@ -54,7 +54,7 @@ func (t *TabBar) ChangeActive(b *TabItem) {
 	}
 }
 func (t *TabBar) SetHeight(h float32) {
-	//if h > t.height() {
+	//if h > t.Height() {
 	t.boundingBox[3] = h
 	//}
 }

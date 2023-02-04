@@ -23,6 +23,8 @@ type Text struct {
 	//MultiLineTextInput
 	LastWidth             float32
 	CursorInd, CursorLine int
+
+	Editor *Editor
 }
 
 type TextFlag uint
@@ -55,6 +57,26 @@ func NewText(id, text string, x, y, w, h float32, chars []fonts.CombinedCharInfo
 		Flag:         flag,
 		Lines:        l,
 	}
+	return &t
+}
+
+func NewTextNew(id, text string, x, y float32, font *fonts.Font, style *styles.Style, flag TextFlag) *Text {
+	t := Text{
+		Message: text,
+		baseWidget: baseWidget{
+			id: id,
+			//boundingBox:     [4]float32{x, y, w, h + float32(style.TextPadding)},
+			BackgroundColor: style.TransparentColor,
+		},
+		CurrentColor: style.TextColor,
+		Size:         style.TextSize,
+		Padding:      style.TextPadding * int(style.FontScale),
+		Scale:        style.FontScale,
+		Flag:         flag,
+		Editor:       NewEditor(font, style.FontScale),
+	}
+	t.Editor.InsertText(text)
+	t.SetWH(t.Editor.TextWidth, t.Editor.TextHeight)
 	return &t
 }
 

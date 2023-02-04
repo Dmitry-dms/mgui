@@ -258,15 +258,15 @@ func (c *CmdBuffer) CreateBorderBox(x, y, w, h, lineWidth float32, clr [4]float3
 
 func (c *CmdBuffer) text(text *widgets.Text, font fonts.Font, x, y float32, scale float32, clr [4]float32) (vert []float32, ind []int32, cnt int) {
 	texId := font.TextureId
-	for i, r := range []rune(text.Message) {
-		info := font.GetCharacter(r)
+	for _, r := range text.Editor.CharsInfo {
+		//info := font.GetCharacter(r)
 
-		if info.Rune == rune(127) { // '\n'
-			continue
-		}
-		xPos := x + text.Chars[i].Pos.X
-		yPos := y - text.Chars[i].Pos.Y
-		v, idec, vc := c.addCharacter(xPos, yPos, scale, texId, *info, clr)
+		//if r == '\n' { // '\n'
+		//	continue
+		//}
+		xPos := x + r.Xpos
+		yPos := y - r.Ypos
+		v, idec, vc := c.addCharacter(xPos, yPos, scale, texId, *r.Info, clr)
 		vert = append(vert, v...)
 		ind = append(ind, idec...)
 		cnt += vc

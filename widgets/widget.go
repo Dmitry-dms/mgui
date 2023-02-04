@@ -26,12 +26,12 @@ type baseWidget struct {
 
 	Vertices []float32
 	Indices  []int32
-	// LastBufferIndex shows the value of the buffer.LastInd counter after
-	// the widget has been sent to the buffer. It prevents errors from appearing when constructing the indices buffer.
+	// LastBufferIndex shows the value of the Buffer.LastInd counter after
+	// the widget has been sent to the Buffer. It prevents errors from appearing when constructing the indices Buffer.
 	// For example, the first widget was drawn, and in the next frame, a second widget was drawn in front of
 	// this widget, which indicates that the first widget needs to be redrawn.
 	// But at the stage of drawing the second widget, there is no access to the Updated flag of the first one.
-	// Therefore, it is necessary to monitor the status of the indexes buffer.
+	// Therefore, it is necessary to monitor the status of the indexes Buffer.
 	LastBufferIndex int
 	VertCount       int
 	Updated         bool

@@ -64,6 +64,12 @@ type TextLine struct {
 	Msg                           string
 }
 
+type Text struct {
+	Data          string
+	Lines         []TextLine
+	Width, Height float32
+}
+
 // CalculateTextBounds is only optimized when you draw text top to down.
 // TODO: Create font interface and add it to mGUI
 func (f *Font) CalculateTextBounds(text string, scale float32) (width, height float32, lines []TextLine, chars []CombinedCharInfo) {
@@ -85,6 +91,7 @@ func (f *Font) CalculateTextBounds(text string, scale float32) (width, height fl
 	currentLine.StartY = 0
 	currentLine.Height = float32(f.Face.Metrics().Height.Ceil())
 	currentLine.Width = 0
+	var charInfo CombinedCharInfo
 	for i, r := range tmp {
 		info := f.GetCharacter(r)
 		if info.Width == 0 {
@@ -123,20 +130,22 @@ func (f *Font) CalculateTextBounds(text string, scale float32) (width, height fl
 				maxDescend = d
 			}
 		}
+
 		if info.Rune == ' ' {
-			chars[i] = CombinedCharInfo{
+			charInfo = CombinedCharInfo{
 				Char:  *info,
 				Pos:   utils.Vec2{X: xPos, Y: yPos},
 				Width: float32(info.Width),
 			}
 		} else {
-			chars[i] = CombinedCharInfo{
+			charInfo = CombinedCharInfo{
 				Char:  *info,
 				Pos:   utils.Vec2{X: xPos, Y: yPos},
 				Width: float32(info.LeftBearing + info.Width + info.RightBearing),
 			}
 		}
-		currentLine.Text = append(currentLine.Text, chars[i])
+		chars[i] = charInfo
+		currentLine.Text = append(currentLine.Text, charInfo)
 		currentLine.Msg += string(r)
 
 		dx += float32(info.Width) * scale
@@ -243,6 +252,8 @@ func (f *Font) generateBitmap(dpi float32, from, to int) *image.RGBA {
 		dx += a.Ceil()
 		if c == ' ' {
 			ch.Width = f.FontSize / 3
+			ch.RightBearing = 0
+			ch.LeftBearing = 0
 		}
 		if c == '\u007f' {
 			f.CharMap[CharNotFound] = &ch

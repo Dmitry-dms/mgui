@@ -18,7 +18,7 @@ import (
 
 type GLRender struct {
 	vaoId, vboId, ebo uint32
-	shader            *Shader
+	shaderProgram     *ShaderProgram
 }
 
 const (
@@ -38,15 +38,15 @@ const (
 )
 
 func NewGlRenderer() *GLRender {
-	s, err := NewShader("examples/gui.glsl")
+	s, err := NewShaderProgram("examples/gui.glsl")
 	if err != nil {
 		panic(err)
 	}
 	r := GLRender{
-		vaoId:  0,
-		vboId:  0,
-		ebo:    0,
-		shader: s,
+		vaoId:         0,
+		vboId:         0,
+		ebo:           0,
+		shaderProgram: s,
 	}
 
 	gl.GenBuffers(1, &r.vboId)
@@ -69,7 +69,7 @@ func (b *GLRender) Draw(displaySize [2]float32, buffer draw.CmdBuffer) {
 	displayWidth := displaySize[0]
 	displayHeight := displaySize[1]
 
-	b.shader.Use()
+	b.shaderProgram.Use()
 	vaoId := GenBindVAO()
 	gl.BindBuffer(gl.ARRAY_BUFFER, b.vboId)
 
@@ -93,7 +93,7 @@ func (b *GLRender) Draw(displaySize [2]float32, buffer draw.CmdBuffer) {
 		{-1.0, -1.0, -1.0, 1.0},
 	}
 
-	b.shader.UploadMatslice("uProjection", orthoProjection)
+	b.shaderProgram.UploadMatslice("uProjection", orthoProjection)
 
 	for _, cmd := range buffer.DrawCalls {
 		//fmt.Println(cmd.TexId)
@@ -112,7 +112,7 @@ func (b *GLRender) Draw(displaySize [2]float32, buffer draw.CmdBuffer) {
 		if cmd.TexId != 0 {
 			gl.ActiveTexture(gl.TEXTURE0 + cmd.TexId)
 			gl.BindTexture(gl.TEXTURE_2D, cmd.TexId)
-			b.shader.UploadTexture("Texture", int32(cmd.TexId))
+			b.shaderProgram.UploadTexture("Texture", int32(cmd.TexId))
 		}
 		gl.Scissor(x, y, w, h)
 		if cmd.Type == "LINE_STRIP" {
@@ -130,23 +130,23 @@ func (b *GLRender) Draw(displaySize [2]float32, buffer draw.CmdBuffer) {
 
 	}
 
-	b.shader.Detach()
+	b.shaderProgram.Detach()
 	gl.DeleteVertexArrays(1, &vaoId)
 	gl.Disable(gl.SCISSOR_TEST)
 }
 
-type Shader struct {
+type ShaderProgram struct {
 	ProgramId uint32
 	path      string
 	beingUsed bool
 }
 
-func NewShader(path string) (*Shader, error) {
+func NewShaderProgram(path string) (*ShaderProgram, error) {
 	id, err := CreateProgram(path)
 	if err != nil {
 		return nil, err
 	}
-	result := Shader{
+	result := ShaderProgram{
 		ProgramId: id,
 		path:      path,
 		beingUsed: false,
@@ -154,59 +154,59 @@ func NewShader(path string) (*Shader, error) {
 	return &result, nil
 }
 
-func (s *Shader) Use() {
+func (s *ShaderProgram) Use() {
 	if !s.beingUsed {
 		useProgram(s.ProgramId)
 		s.beingUsed = true
 	}
 }
-func (s *Shader) Detach() {
+func (s *ShaderProgram) Detach() {
 	useProgram(0)
 	s.beingUsed = false
 }
 
-func (s *Shader) UploadFloat(name string, f float32) {
+func (s *ShaderProgram) UploadFloat(name string, f float32) {
 	name_cstr := gl.Str(name + "\x00")
 	location := gl.GetUniformLocation(s.ProgramId, name_cstr)
 	s.Use()
 	gl.Uniform1f(location, f)
 }
-func (s *Shader) UploadTexture(name string, slot int32) {
+func (s *ShaderProgram) UploadTexture(name string, slot int32) {
 	name_cstr := gl.Str(name + "\x00")
 	// location := gl.GetUniformLocation(s.ProgramId, name_cstr)
 	// s.Use()
 	gl.Uniform1i(gl.GetUniformLocation(s.ProgramId, name_cstr), slot)
 }
 
-func (s *Shader) UploadInt(name string, slot int32) {
+func (s *ShaderProgram) UploadInt(name string, slot int32) {
 	name_cstr := gl.Str(name + "\x00")
 	// location := gl.GetUniformLocation(s.ProgramId, name_cstr)
 	// s.Use()
 	gl.Uniform1i(gl.GetUniformLocation(s.ProgramId, name_cstr), slot)
 }
 
-func (s *Shader) UploadVec2(name string, vec []float32) {
+func (s *ShaderProgram) UploadVec2(name string, vec []float32) {
 	name_cstr := gl.Str(name + "\x00")
 	location := gl.GetUniformLocation(s.ProgramId, name_cstr)
 	s.Use()
 	gl.Uniform2f(location, vec[0], vec[1])
 }
 
-//func (s *Shader) UploadVec3(name string, vec mgl32.Vec3) {
+//func (s *ShaderProgram) UploadVec3(name string, vec mgl32.Vec3) {
 //	name_cstr := gl.Str(name + "\x00")
 //	location := gl.GetUniformLocation(s.ProgramId, name_cstr)
 //	s.Use()
 //	v3 := [3]float32(vec)
 //	gl.Uniform3fv(location, 1, &v3[0])
 //}
-//func (s *Shader) UploadVec4(name string, vec mgl32.Vec4) {
+//func (s *ShaderProgram) UploadVec4(name string, vec mgl32.Vec4) {
 //	name_cstr := gl.Str(name + "\x00")
 //	location := gl.GetUniformLocation(s.ProgramId, name_cstr)
 //	s.Use()
 //	v4 := [4]float32(vec)
 //	gl.Uniform4fv(location, 1, &v4[0])
 //}
-func (s *Shader) UploadMatslice(name string, mat [4][4]float32) {
+func (s *ShaderProgram) UploadMatslice(name string, mat [4][4]float32) {
 	name_cstr := gl.Str(name + "\x00")
 	location := gl.GetUniformLocation(s.ProgramId, name_cstr)
 	s.Use()
@@ -214,7 +214,7 @@ func (s *Shader) UploadMatslice(name string, mat [4][4]float32) {
 	gl.UniformMatrix4fv(location, 1, false, &mat[0][0])
 }
 
-//func (s *Shader) UploadMat4(name string, mat mgl32.Mat4) {
+//func (s *ShaderProgram) UploadMat4(name string, mat mgl32.Mat4) {
 //	name_cstr := gl.Str(name + "\x00")
 //	location := gl.GetUniformLocation(s.ProgramId, name_cstr)
 //	s.Use()
@@ -222,7 +222,7 @@ func (s *Shader) UploadMatslice(name string, mat [4][4]float32) {
 //	gl.UniformMatrix4fv(location, 1, false, &m4[0])
 //}
 //
-//func (s *Shader) UploadIntArray(name string, array []int32) {
+//func (s *ShaderProgram) UploadIntArray(name string, array []int32) {
 //	name_cstr := gl.Str(name + "\x00")
 //	location := gl.GetUniformLocation(s.ProgramId, name_cstr)
 //	s.Use()
@@ -359,7 +359,7 @@ func (t *Texture) GetId() uint32 {
 	return t.TextureId
 }
 
-// TODO: Replace gl.RGBA with gl.RED (probably requires changing shader: separate font shader from general sahder gui.glsl)
+// TODO: Replace gl.RGBA with gl.RED (probably requires changing shaderProgram: separate font shaderProgram from general sahder gui.glsl)
 func UploadRGBATextureFromMemory(data image.Image) *Texture {
 	w := data.Bounds().Max.X
 	h := data.Bounds().Max.Y

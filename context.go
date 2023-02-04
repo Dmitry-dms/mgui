@@ -62,9 +62,10 @@ type UiContext struct {
 	displaySize [2]float32
 
 	//cache
-	windowCache    *cache.RamCache[*Window]
-	windowStack    utils.Stack[*Window]
-	widgetsCache   *cache.RamCache[widgets.Widget]
+	windowCache *cache.RamCache[*Window]
+	windowStack utils.Stack[*Window]
+	//widgetsCache   *cache.RamCache[widgets.Widget]
+	widgetsCache   *widgets.WidgetsCache
 	widgSpaceCache *cache.RamCache[*WidgetSpace]
 
 	//refactor
@@ -95,12 +96,13 @@ const (
 func NewContext(frontRenderer UiRenderer) *UiContext {
 	c := UiContext{
 		// rq:            NewRenderQueue(),
-		renderer:       frontRenderer,
-		io:             NewIo(),
-		Windows:        make([]*Window, 0),
-		sortedWindows:  make([]*Window, 0),
-		windowCache:    cache.NewRamCache[*Window](),
-		widgetsCache:   cache.NewRamCache[widgets.Widget](),
+		renderer:      frontRenderer,
+		io:            NewIo(),
+		Windows:       make([]*Window, 0),
+		sortedWindows: make([]*Window, 0),
+		windowCache:   cache.NewRamCache[*Window](),
+		//widgetsCache:   cache.NewRamCache[widgets.Widget](),
+		widgetsCache:   widgets.New(),
 		windowStack:    utils.NewStack[*Window](),
 		widgSpaceCache: cache.NewRamCache[*WidgetSpace](),
 		CurrentStyle:   &styles.DefaultStyle,

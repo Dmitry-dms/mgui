@@ -107,7 +107,7 @@ func NewWindow(x, y, w, h float32) *Window {
 }
 
 const (
-	defx, defy, defw, defh = 300, 100, 400, 500
+	defx, defy, defw, defh = 300, 100, 900, 500
 	scrollChange           = 2
 )
 
@@ -342,20 +342,21 @@ func BeginWindow(windowName string, opened *bool) {
 		//	*opened = !*opened
 		//}
 
-		txt, _, _, _, out := c.TextEX(wnd.mainWidgetSpace, windowName+"-txt", windowName, 0, DefaultTextFlag)
-		if out { // Prevent cursor changing because we draw it outside main widget space
-			wnd.mainWidgetSpace.addCursor(-txt.Width(), -txt.Height())
-			wnd.mainWidgetSpace.AddVirtualWH(-txt.Width(), -txt.Height())
-		}
-		txt.UpdatePosition([4]float32{wnd.x, wnd.y, txt.Width(), txt.Height()})
-		c.DrawText(wnd.x, wnd.y, txt, c.font.TextureId, wnd.buffer, draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
+		//txt, _, _, _, out := c.TextEX(wnd.mainWidgetSpace, windowName+"-txt", windowName, 0, DefaultTextFlag)
+		//if out { // Prevent cursor changing because we draw it outside main widget space
+		//	wnd.mainWidgetSpace.addCursor(-txt.Width(), -txt.Height())
+		//	wnd.mainWidgetSpace.AddVirtualWH(-txt.Width(), -txt.Height())
+		//}
+		//txt.UpdatePosition([4]float32{wnd.x, wnd.y, txt.Width(), txt.Height()})
+		//c.DrawText(wnd.x, wnd.y, txt, c.font.TextureId, wnd.buffer, draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
 	}
 
 	// Draw selected text regions. We do it here because we don't want to draw it in front of text.
 	// Maybe in future I will change text selection algorithm and rework this.
 	for i, region := range wnd.textRegions {
-		b := region.Min
-		DrawRect(wnd.buffer, fmt.Sprint(i)+"tregfg", b.X, b.Y, region.Width(), region.Height(), softGreen)
+		coords := region.Min
+		bound := region.Max
+		DrawRect(wnd.buffer, fmt.Sprint(i)+"tregfg", coords.X, coords.Y, bound.X, bound.Y, softGreen)
 	}
 	wnd.buffer.SeparateBuffer(0, draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
 }
@@ -745,6 +746,68 @@ func (c *UiContext) InputTexEX(ws *WidgetSpace, wnd *Window, id string, inputMsg
 	}
 	return
 }
+func (c *UiContext) InputTexEX2(ws *WidgetSpace, wnd *Window, id string, inputMsg string, inpmsg *string, key GuiKey, flag widgets.TextFlag) (txt *widgets.Text, x, y float32, isRow, outOfWs bool) {
+	txt = c.getWidget(id, func() widgets.Widget {
+		txt = widgets.NewTextNew(id, *inpmsg, ws.cursorX, ws.cursorY, c.font, c.CurrentStyle, flag)
+		txt.Updated = true
+		return txt
+	}).(*widgets.Text)
+
+	x, y, isRow, outOfWs = c.WidgetEX(ws, txt.Width(), txt.Height())
+
+	if key != GuiKey_None && flag&widgets.Editable != 0 && c.FocusedTextInput == txt {
+		if key == GuiKey_Backspace {
+			txt.Editor.Backspace()
+			//if c.SelectedText != "" {
+			//	*inpmsg = strings.ReplaceAll(*inpmsg, c.SelectedText, "")
+			//	c.ClearTextSelection(wnd)
+			//	//ToggleAllWidgets()
+			//} else {
+			//	tmp := ""
+			//	if txt.CursorInd == 0 && txt.CursorLine == 0 {
+			//	} else {
+			//		txt.CursorHelper(-1)
+			//		tmp = removeFromString(*inpmsg, txt.CursorLine, txt.CursorInd, txt.Lines)
+			//		*inpmsg = tmp
+			//	}
+			//}
+		} else if key == GuiKey_RightArrow {
+			txt.Editor.MoveCharRight()
+		} else if key == GuiKey_UpArrow {
+			txt.Editor.MoveLineUp()
+		} else if key == GuiKey_DownArrow {
+			txt.Editor.MoveLineDown()
+		} else if key == GuiKey_Delete {
+			txt.Editor.Delete()
+		} else if key == GuiKey_LeftArrow {
+			txt.Editor.MoveCharLeft()
+		} else if key == GuiKey_Enter {
+			txt.Editor.InsertText("\n")
+			//if txt.Flag&widgets.MultiLine != 0 {
+			//	tmp := insertIntoString2(*inpmsg, txt.CursorLine, txt.CursorInd, inputMsg, txt.Lines)
+			//	txt.CursorLine++
+			//	txt.CursorInd = 0
+			//	*inpmsg = tmp
+			//}
+		} else if IsCommandKey(key) {
+
+		} else if key != GuiKey_None {
+			txt.Editor.InsertText(inputMsg)
+			//tmp := insertIntoString2(*inpmsg, txt.CursorLine, txt.CursorInd, inputMsg, txt.Lines)
+			//txt.CursorInd++
+			//*inpmsg = tmp
+		}
+		//width, h, l, chars := c.font.CalculateTextBounds(*inpmsg, c.CurrentStyle.FontScale)
+		//txt.Lines = l
+		//txt.Chars = chars
+		//txt.SetWH(width, h)
+		//txt.Message = *inpmsg
+
+		txt.ToggleUpdate()
+		//ToggleAllWidgets()
+	}
+	return
+}
 
 func (c *UiContext) getTextInput() (string, GuiKey) {
 	k := ""
@@ -754,6 +817,61 @@ func (c *UiContext) getTextInput() (string, GuiKey) {
 		k = c.io.keyToString(key)
 	}
 	return k, key
+}
+
+func TextInput2(id string, w, h float32, message *string) {
+	c := ctx()
+	wnd, rootWs := c.IsWidgetSpaceAvailable()
+	if rootWs == nil {
+		fmt.Println("Can't find any widget spaces")
+		return
+	}
+	var txt *widgets.Text
+	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
+	ws := c.subWidgetSpaceHelperWithBackground(wnd, wnd.buffer, id, x, y, w, h, 0, 0, softGreen, draw.StraightCorners, Scrollable|FitWidth, func() {
+		currWs := wnd.currentWidgetSpace
+		msg, key := c.getTextInput()
+		txtTmp, x, y, isRow, out := c.InputTexEX2(currWs, wnd, id, msg, message, key, widgets.Editable|Selectable)
+		if out {
+			return
+		} else {
+			wnd.VisibleTexts = append(wnd.VisibleTexts, txtTmp)
+		}
+		txt = txtTmp
+
+		clip, buffer := currWs.UpdateWidgetPosition(x, y, isRow, wnd, txt)
+		//if c.FocusedTextInput == txt {
+		//	xc, yc, wc, hc := txt.CalculateCursorPos()
+		//	DrawRect(buffer, id+"cursor", x+xc, y+yc, wc, hc, red)
+		//}
+		buffer.SeparateBuffer(0, clip)
+		c.DrawText(x, y, txt, c.font.TextureId, buffer, clip)
+	})
+	// It is necessary to always monitor the state of the focused text.
+	if c.FocusedTextInput == txt && c.io.MouseClicked[0] {
+		if utils.PointOutsideRect(c.io.MouseClickedPos[0], utils.NewRectS(ws.ClipRect)) {
+			c.FocusedTextInput = nil
+			txt.ToggleUpdate()
+		}
+	}
+
+	if c.hoverBehavior(wnd, utils.NewRectS(ws.ClipRect)) && c.io.MouseClicked[0] {
+		//txt.ToggleUpdate()
+		//txt.CursorInd = len(txt.Chars)
+		c.FocusedTextInput = txt
+		//pos := c.io.MouseClickedPos[0]
+		//startFounded := false
+		//for _, line := range txt.Lines {
+		//	if pos.Y > line.StartY+y && pos.Y <= line.StartY+y+line.Height && !startFounded {
+		//		startFounded = true
+		//		txt.CursorInd = len(line.Text)
+		//	}
+		//}
+	}
+	rootWs.AddVirtualHeight(ws.H)
+	rootWs.addCursor(ws.W, ws.H)
+	//wnd.currentWidgetSpace.AddVirtualHeight(ws.H)
+	//wnd.addCursor(ws.W, ws.H)
 }
 
 func TextInput(id string, w, h float32, message *string) {
@@ -925,6 +1043,35 @@ func (c *UiContext) WidgetEX(ws *WidgetSpace, w, h float32) (x, y float32, isRow
 		if !isRow {
 			ws.AddVirtualWH(w, h)
 		}
+	}
+	return
+}
+
+func (c *UiContext) TextEX2(ws *WidgetSpace, id string, msg string, newWidth float32, flag widgets.TextFlag) (txt *widgets.Text, x, y float32, isRow, outOfWs bool) {
+	txt = c.getWidget(id, func() widgets.Widget {
+		txt := widgets.NewTextNew(id, msg, ws.cursorX, ws.cursorY, c.font, c.CurrentStyle, flag)
+		txt.Updated = true
+		return txt
+	}).(*widgets.Text)
+	x, y, isRow, outOfWs = c.WidgetEX(ws, txt.Width(), txt.Height())
+
+	if txt.LastWidth != newWidth {
+		txt.ToggleUpdate()
+		if txt.Flag&widgets.SplitChars != 0 {
+			msg = c.FitTextToWidth(txt.BoundingBox()[0], newWidth, msg)
+		} else if txt.Flag&widgets.SplitWords != 0 {
+			numChars := int(math.Floor(float64(newWidth / c.font.XCharAdvance())))
+			msg = wrap(msg, numChars)
+		}
+
+		txt.Editor.ReplaceBuffer(msg)
+
+		//width, h, l, chars := c.font.CalculateTextBounds(msg, c.CurrentStyle.FontScale)
+		//txt.Lines = l
+		//txt.Chars = chars
+		txt.Message = msg
+		//txt.SetWH(width, h)
+		txt.LastWidth = newWidth
 	}
 	return
 }
@@ -1105,6 +1252,35 @@ func Image(id string, w, h float32, texId uint32, texCoords [4]float32) bool {
 
 	c.DrawImage(x, y, img, buffer, clip)
 	return clicked
+}
+
+func Text2(id string, msg string, flag widgets.TextFlag) {
+	c := ctx()
+	wnd, ws := c.IsWidgetSpaceAvailable()
+	if ws == nil {
+		fmt.Println("Can't find any widget spaces")
+		return
+	}
+
+	txt, x, y, isRow, out := c.TextEX2(ws, id, msg, 0, flag)
+	//fmt.Println(string(txt.Editor.Buff.Data))
+	if out {
+		return
+	} else if flag&Selectable != 0 {
+		wnd.VisibleTexts = append(wnd.VisibleTexts, txt)
+	}
+
+	hovered := IsHovered(wnd, ws, txt)
+	if hovered {
+		txt.SetTextColor(softGreen)
+	} else {
+		txt.SetTextColor(c.CurrentStyle.TextColor)
+	}
+	clip, buffer := ws.UpdateWidgetPosition(x, y, isRow, wnd, txt)
+
+	c.DrawText(x, y, txt, c.font.TextureId, buffer, clip)
+	wnd.debugDrawS(txt.BoundingBox())
+	wnd.buffer.SeparateBuffer(0, clip)
 }
 
 func Text(id string, msg string, flag widgets.TextFlag) {
@@ -1774,6 +1950,7 @@ func Row(id string, align widgets.RowAlign, widgFunc func()) {
 
 // solveTextSelection is responsible for finding selected texts on window
 // TODO: improve this algorithm
+// TODO: add upstring selection with several Text widgets. Today, works only downstring selection
 func (c *UiContext) solveTextSelection(wnd *Window) {
 	startFounded := false
 	// Iterate through all visible texts on the screen
@@ -1795,25 +1972,23 @@ func (c *UiContext) solveTextSelection(wnd *Window) {
 				b := t.BoundingBox()
 				x := c.io.dragStarted.X - b[0]
 				y := c.io.dragStarted.Y - b[1]
-				//x := c.io.dragStarted.X + c.io.dragDelta.X - b[0]
-				//y := c.io.dragStarted.Y + c.io.dragDelta.Y - b[1]
+				for _, line := range t.Editor.Lines {
+					for i := line.Begin; i < line.End; i++ {
+						char := t.Editor.CharsInfo[i]
+						if x >= char.Xpos-5 && x <= char.Xpos+float32(char.Info.Advance) && !startFounded &&
+							y <= line.Ypos+line.Height {
 
-				for i := 0; i < len(t.Lines); i++ {
-					for ind, pos := range t.Lines[i].Text {
-						if x >= pos.Pos.X-5 && x <= pos.Pos.X+float32(pos.Char.Width) && !startFounded &&
-							y <= t.Lines[i].StartY+t.Lines[i].Height {
-							t.StartLine = i
-							t.StartInd = ind
+							t.StartInd = i
 							startFounded = true
+							t.Editor.Selection = true
+							t.Editor.StartSelection(i)
 							c.SelectedTextStart = t
-
 							if t == c.FocusedTextInput {
-								t.CursorInd = ind
-								t.CursorLine = t.StartLine
+								//t.CursorInd = ind
+								//t.CursorLine = t.StartLine
 							}
 						}
 					}
-
 				}
 
 				// If text start was founded, drag delta helps to find boundaries of selected texts
@@ -1823,182 +1998,56 @@ func (c *UiContext) solveTextSelection(wnd *Window) {
 				y := c.io.dragStarted.Y + c.io.dragDelta.Y - b[1]
 
 				endfounded := false // Should use this because we need to find only the first hovered line
-				for i := 0; i < len(t.Lines); i++ {
-					for ind, pos := range t.Lines[i].Text {
-						if x >= pos.Pos.X-5 && x <= pos.Pos.X+float32(pos.Char.Width) && !endfounded &&
-							y <= t.Lines[i].StartY+t.Lines[i].Height {
-							t.EndLine = i
-							t.EndInd = ind
+				for _, line := range t.Editor.Lines {
+					for i := line.Begin; i < line.End; i++ {
+						char := t.Editor.CharsInfo[i]
+						if x >= char.Xpos-5 && x <= char.Xpos+float32(char.Info.Advance)*c.CurrentStyle.FontScale && !endfounded &&
+							y <= line.Ypos+line.Height*c.CurrentStyle.FontScale {
+							t.EndInd = i
+							t.Editor.SelectionEnd = i
 							c.SelectedTextEnd = t
 							endfounded = true
-							//fmt.Println(ind)
+							if i < t.Editor.SelectionBegin {
+								t.Editor.SelectionPoint = t.Editor.SelectionBegin
+							}
 						}
 					}
 				}
 			}
 		}
-	}
 
-	if c.SelectedTextStart != nil && c.SelectedTextEnd != nil {
-		tmp := []*widgets.Text{} // It's a temporary slice which contains selected text widgets
-		if c.SelectedTextStart == c.SelectedTextEnd {
-			tmp = append(tmp, c.SelectedTextStart)
-		} else { // If selected widgets have more than 1 widget, find the first, and add to tmp in order of creation until the last
-			startFounded := false
-			for _, text := range wnd.VisibleTexts {
-				if text == c.SelectedTextStart {
-					tmp = append(tmp, text)
-					startFounded = true
-					continue
-				}
-				if startFounded {
-					tmp = append(tmp, text)
-					if text == c.SelectedTextEnd {
-						break
+		if c.SelectedTextStart != nil && c.SelectedTextEnd != nil {
+			tmp := []*widgets.Text{} // It's a temporary slice which contains selected text widgets
+			if c.SelectedTextStart == c.SelectedTextEnd {
+				tmp = append(tmp, c.SelectedTextStart)
+			} else { // If selected widgets have more than 1 widget, find the first, and add to tmp in order of creation until the last
+				startFounded := false
+				for _, text := range wnd.VisibleTexts {
+					if text == c.SelectedTextStart {
+						text.Editor.SelectionEnd = text.Editor.Buff.Len() - 1
+						tmp = append(tmp, text)
+						startFounded = true
+						continue
+					}
+					if startFounded {
+						tmp = append(tmp, text)
+						if text == c.SelectedTextEnd {
+							break
+						}
 					}
 				}
 			}
-		}
-
-		rects := []utils.Rect{} // Boundaries for each selected line
-		if len(tmp) == 1 {
-			start := c.SelectedTextStart
-			if start.StartLine == start.EndLine {
-				r, msg := c.findOneLineTexRegion(start, start.StartLine, start.StartInd, start.EndInd)
-				rects = append(rects, r...)
-				c.SelectedText = msg
-			} else {
-				selectedText := ""
-				for i := start.StartLine; i <= start.EndLine; i++ {
-					if i == start.StartLine {
-						r, msg := c.findFirstTexRegion(start, start.StartLine, start.StartInd)
-						rects = append(rects, r...)
-						selectedText += msg + "\n"
-					} else if i == start.EndLine {
-						r, msg := c.findLastTexRegion(start, start.EndLine, start.EndInd)
-						rects = append(rects, r...)
-						selectedText += msg
-					} else {
-						r, msg := c.findAllTexRegion(start, i, i)
-						rects = append(rects, r...)
-						selectedText += msg
-					}
-				}
-				c.SelectedText = selectedText
+			rects := []utils.Rect{} // Boundaries for each selected line
+			selectedString := ""
+			for _, text := range tmp {
+				msg, regions := text.Editor.GetTextSelection(text.BoundingBox()[0], text.BoundingBox()[1])
+				selectedString += msg + " "
+				rects = append(rects, regions...)
 			}
-		} else if len(tmp) == 2 {
-			selectedText := ""
-			start := tmp[0]
-			r, msg := c.findFirstTexRegion(start, start.StartLine, start.StartInd)
-			rects = append(rects, r...)
-			selectedText += msg
-			if len(start.Lines) != 1 {
-				r, msg = c.findAllTexRegion(start, start.StartLine+1, len(start.Lines)-1)
-				rects = append(rects, r...)
-				selectedText += msg
-			}
-			end := tmp[1]
-			r, msg = c.findAllTexRegion(end, 0, end.EndLine-1)
-			rects = append(rects, r...)
-			selectedText += msg
-			r, msg = c.findLastTexRegion(end, end.EndLine, end.EndInd)
-			rects = append(rects, r...)
-			selectedText += msg
-			c.SelectedText = selectedText
-		} else {
-			selectedText := ""
-			first := tmp[0]
-			r, msg := c.findFirstTexRegion(first, first.StartLine, first.StartInd)
-			rects = append(rects, r...)
-			selectedText += msg
-			if len(first.Lines) != 1 {
-				r, msg = c.findAllTexRegion(first, first.StartLine+1, len(first.Lines)-1)
-				rects = append(rects, r...)
-				selectedText += msg
-			}
-			for i := 1; i < len(tmp)-1; i++ {
-				txt := tmp[i]
-				r, msg = c.findAllTexRegion(txt, 0, len(txt.Lines)-1)
-				rects = append(rects, r...)
-				selectedText += msg
-			}
-			last := tmp[len(tmp)-1]
-			r, msg = c.findAllTexRegion(last, 0, last.EndLine-1)
-			rects = append(rects, r...)
-			selectedText += msg
-			r, msg = c.findLastTexRegion(last, last.EndLine, last.EndInd)
-			rects = append(rects, r...)
-			selectedText += msg
-			c.SelectedText = selectedText
-		}
-		wnd.textRegions = rects
-	}
-
-}
-
-type selectionFlag uint
-
-const (
-	firstLine selectionFlag = iota
-	lastLine
-	innerLines // lines between the first and the last
-)
-
-// findOneLineTexRegion is used when you have 1 selected line and it's boundaries are placed between 0 and length of the line.
-// For example start at 4 and end at 9 (hell[o wo]rld)
-func (c *UiContext) findOneLineTexRegion(txt *widgets.Text, line, startIdx, endIndex int) ([]utils.Rect, string) {
-	return c.findTextRegion(txt, line, 0, startIdx, endIndex, firstLine)
-}
-func (c *UiContext) findFirstTexRegion(txt *widgets.Text, line, startIdx int) ([]utils.Rect, string) {
-	return c.findTextRegion(txt, line, 0, startIdx, len(txt.Lines[line].Text)-1, firstLine)
-}
-func (c *UiContext) findLastTexRegion(txt *widgets.Text, line, endIdx int) ([]utils.Rect, string) {
-	return c.findTextRegion(txt, line, 0, 0, endIdx, lastLine)
-}
-func (c *UiContext) findInnerTexRegion(txt *widgets.Text) ([]utils.Rect, string) {
-	return c.findTextRegion(txt, txt.StartLine+1, txt.EndLine-1, 0, 0, innerLines)
-}
-func (c *UiContext) findAllTexRegion(txt *widgets.Text, startLine, endLine int) ([]utils.Rect, string) {
-	return c.findTextRegion(txt, startLine, endLine, 0, 0, innerLines)
-}
-
-func (c *UiContext) findTextRegion(txt *widgets.Text, startLine, endLine, startIdx, endIdx int, flag selectionFlag) ([]utils.Rect, string) {
-	var x, y, w, h float32
-	var msg string
-	results := []utils.Rect{}
-	b := txt.BoundingBox()
-	w = 0
-	y = txt.Lines[startLine].StartY + b[1]
-	h = txt.Lines[startLine].Height
-	switch flag {
-	case firstLine:
-		x = txt.Lines[startLine].Text[startIdx].Pos.X + b[0]
-		for i := startIdx; i <= endIdx; i++ {
-			w += txt.Lines[startLine].Text[i].Width
-			msg += string(txt.Lines[startLine].Text[i].Char.Rune)
-		}
-		r := utils.NewRect(x, y, w, h)
-		results = append(results, r)
-	case lastLine:
-		x = txt.Lines[startLine].StartX + b[0]
-		for i := startIdx; i <= endIdx; i++ {
-			w += txt.Lines[startLine].Text[i].Width
-			msg += string(txt.Lines[startLine].Text[i].Char.Rune)
-		}
-		r := utils.NewRect(x, y, w, h)
-		results = append(results, r)
-	case innerLines:
-		for i := startLine; i <= endLine; i++ {
-			x = txt.Lines[i].StartX + b[0]
-			y = txt.Lines[i].StartY + b[1]
-			w = txt.Lines[i].Width
-			h = txt.Lines[i].Height
-			msg += txt.Lines[i].Msg + "\n"
-			r := utils.NewRect(x, y, w, h)
-			results = append(results, r)
+			wnd.textRegions = rects
+			c.SelectedText = selectedString
 		}
 	}
-	return results, msg
 }
 
 func EndWindow() {

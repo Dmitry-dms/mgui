@@ -65,7 +65,7 @@ var (
 		SliderBtnColor:        [4]float32{0, 0, 0, 1},
 		SliderHeight:          10,
 		SliderBtnWidth:        20,
-		FontScale:             1,
+		FontScale:             1.0,
 		TabBtnColor:           [4]float32{44, 81, 132, 1},
 		TabBtnActiveColor:     [4]float32{51, 105, 173, 1},
 		WidgSpaceDividerColor: [4]float32{70, 70, 79, 1},

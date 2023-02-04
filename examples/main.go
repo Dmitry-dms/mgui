@@ -210,7 +210,8 @@ func main() {
 		//customWindow()
 
 		if ui.GetIo().IsKeyPressed(ui.GuiKey_Space) {
-			fmt.Println(ui.GET_CONTEXT().ActiveWidgetSpaceId)
+			//fmt.Println(ui.GET_CONTEXT().ActiveWidgetSpaceId)
+			fmt.Println(ui.GET_CONTEXT().SelectedText)
 			opendW = true
 		}
 
@@ -231,7 +232,7 @@ func main() {
 
 var ish bool = false
 var tW float32 = 400
-var message = "hello \nworld"
+var message = "hello как так \nworld хорошо ли это?"
 var msg1 = "h"
 
 func customWindow() {
@@ -257,10 +258,11 @@ func firstWindow() {
 	//})
 	//ui.GlobalImage("glob", 100, 100, 100, 100, tex.TextureId, tex.TexCoords)
 	ui.BeginWindow("Th", &opendW)
-	//ui.TextInput("tirey21", 300, 50, &msg1)
 
 	//ui.TreeNode("trdsee1", "Configuration", func() {
-	//	ui.Text("teп-ttdsdp-1", "Обычная картинка, которая  ничего не делает", ui.DefaultTextFlag)
+	ui.Text2("teп-ttdsdp-1", "The quick brown fox jumps\n over the lazy dog", ui.Selectable)
+	ui.Text2("teп-ttdsdp-211", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
+	//ui.TextInput2("tirey21", 100, 150, &msg1)
 	//	ui.Image("-iyрпен66g", 100, 100, tex2.TextureId, tex2.TexCoords)
 	//	ui.TreeNode("treesds1yuy2", "Настройки", func() {
 	//		ui.Text("#sпрsdsвr", "the quick brown fox jumps over the lazy dog", ui.DefaultTextFlag)
@@ -276,17 +278,20 @@ func firstWindow() {
 	//	//ui.Image(fmt.Sprint(12)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
 	//	ui.Text(fmt.Sprint(2131)+"-txt", "dfdgfg - это текст-\"рыба\"", ui.Selectable)
 	//})
-	//for i := 0; i < 100; i++ {
-	//	//fmt.Println(tex.TexCoords)
-	if ui.Image("-iyimgy5g", 100, 100, tex.TextureId, tex.TexCoords) {
-		sh = !sh
-	}
-	//ui.Text("h787-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
-	////}
-	ui.Slider("slds", &tW, 100, 1200)
+	//for i := 0; i < 1000; i++ {
+	//	//	//fmt.Println(tex.TexCoords)
+	//	//if ui.Image("-iyimgy5g", 100, 100, tex.TextureId, tex.TexCoords) {
+	//	//	sh = !sh
+	//	//}
+	//	ui.Text("h787-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
+	//}
+	//ui.Slider("slds", &tW, 100, 1200)
 	//elapsed := time.Since(start)
 	//dur += elapsed.Microseconds()
 	//counter++
+	//if ui.GetIo().PressedKey == ui.GuiKey_Space {
+	//	fmt.Printf("Widgets took %d \n", int(dur)/counter)
+	//}
 	//ui.Text("#eывsddddr", "Съешь ещё этих мягких французских булочек да выпей чаю", ui.DefaultTextFlag)
 	//ui.Text("#sdeывr", "the quick brown fox jumps over the lazy dog", ui.DefaultTextFlag)
 	//if sh {
@@ -307,7 +312,7 @@ func firstWindow() {
 	//	})
 	//}
 
-	ui.MultiLineTextInput("inputr23", &message)
+	//ui.MultiLineTextInput("inputr23", &message)
 	//fmt.Printf("Widgets took %d \n", int(dur)/counter)
 
 	//uiCtx.Selection("sel-1", &selection, sle, arrowDown)
@@ -327,11 +332,11 @@ func firstWindow() {
 		//uiCtx.Bezier()
 		//uiCtx.Line(200)
 		//uiCtx.Line(400)
-		ui.PushStyleVar1f(ui.FontScale, 0.75)
-		ui.PushStyleVar1f(ui.AllPadding, 10)
-		if ui.TextButton("Нажать", "Готово") {
-			println("clicked btn text")
-		}
+		//ui.PushStyleVar1f(ui.FontScale, 0.75)
+		//ui.PushStyleVar1f(ui.AllPadding, 10)
+		//if ui.TextButton("Нажать", "Готово") {
+		//	println("clicked btn text")
+		//}
 		//ui.PopStyleVar()
 		//	//	ish = !ish
 		//	//
