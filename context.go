@@ -63,7 +63,7 @@ type UiContext struct {
 
 	//cache
 	windowCache *cache.RamCache[*Window]
-	windowStack utils.Stack[*Window]
+	windowStack Stack
 	//widgetsCache   *cache.RamCache[widgets.Widget]
 	widgetsCache   *widgets.WidgetsCache
 	widgSpaceCache *cache.RamCache[*WidgetSpace]
@@ -103,7 +103,7 @@ func NewContext(frontRenderer UiRenderer) *UiContext {
 		windowCache:   cache.NewRamCache[*Window](),
 		//widgetsCache:   cache.NewRamCache[widgets.Widget](),
 		widgetsCache:   widgets.New(),
-		windowStack:    utils.NewStack[*Window](),
+		windowStack:    NewStack(),
 		widgSpaceCache: cache.NewRamCache[*WidgetSpace](),
 		CurrentStyle:   &styles.DefaultStyle,
 		SelectedTexts:  []*widgets.Text{},
@@ -318,9 +318,9 @@ var lastWinL = 0
 
 func EndFrame(size [2]float32) {
 	c := ctx()
-	if c.WindowCounter == 0 {
-		return
-	}
+	//if c.WindowCounter == 0 {
+	//	return
+	//}
 	// Если количество окон не изменилось, в копировании нет нужды
 	if lastWinL != len(c.Windows) {
 		c.sortedWindows = copyWindows(c.Windows)
@@ -328,9 +328,9 @@ func EndFrame(size [2]float32) {
 	}
 
 	c.findHoveredWindow()
-	if len(c.sortedWindows) == 0 {
-		return
-	}
+	//if len(c.sortedWindows) == 0 {
+	//	return
+	//}
 
 	for _, widget := range c.delayedWidgets {
 		widget()
@@ -340,6 +340,7 @@ func EndFrame(size [2]float32) {
 		c.renderer.Draw(size, *v.buffer)
 		v.buffer.Clear()
 	}
+	//fmt.Println(len(c.globalBuffer.DrawCalls))
 	if len(c.globalBuffer.DrawCalls) != 0 {
 		c.renderer.Draw(size, *c.globalBuffer)
 		c.globalBuffer.Clear()
@@ -384,7 +385,7 @@ func EndFrame(size [2]float32) {
 	c.WantScrollFocusWidgetSpaceId = ""
 
 	c.io.MouseClickedPos[0] = utils.Vec2{}
-	c.ActiveWindow.widgSpaces = []*WidgetSpace{}
+	//c.ActiveWindow.widgSpaces = []*WidgetSpace{}
 
 	c.io.PressedKey = GuiKey_None
 	c.io.modPressed = [8]bool{}
@@ -496,6 +497,10 @@ func (c *UiContext) Bezier() {
 func (c *UiContext) Line(end float32) {
 	wnd := c.windowStack.Peek()
 	wnd.buffer.CreateLine(0, 0, end, end, [4]float32{255, 0, 0, 1})
+
+}
+
+func (c *UiContext) SeparateBuffer(wnd *Window, texid float32, clip draw.ClipRectCompose) {
 
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/Dmitry-dms/mgui/fonts"
 	"github.com/Dmitry-dms/mgui/sprite_packer"
 	"github.com/Dmitry-dms/mgui/utils"
+	"github.com/Dmitry-dms/mgui/widgets"
 	"github.com/go-gl/gl/v4.2-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"image"
@@ -205,13 +206,17 @@ func main() {
 
 		ui.NewFrame([2]float32{float32(Width), float32(Height)})
 
-		firstWindow()
+		//firstWindow()
+		ui.GlobalWidgetSpace("sasas", 200, 200, 300, 300, ui.FillBackground, func() {
+			ui.Image("-iyimgy5g", 100, 100, tex.TextureId, tex.TexCoords)
+			ui.Text("sasas12", "Hello, world!", ui.DefaultTextFlag)
+		})
 		//secondWindow()
 		//customWindow()
 
 		if ui.GetIo().IsKeyPressed(ui.GuiKey_Space) {
 			//fmt.Println(ui.GET_CONTEXT().ActiveWidgetSpaceId)
-			fmt.Println(ui.GET_CONTEXT().SelectedText)
+			//fmt.Println(ui.GET_CONTEXT().SelectedText)
 			opendW = true
 		}
 
@@ -260,8 +265,7 @@ func firstWindow() {
 	ui.BeginWindow("Th", &opendW)
 
 	//ui.TreeNode("trdsee1", "Configuration", func() {
-	ui.Text2("teп-ttdsdp-1", "The quick brown fox jumps\n over the lazy dog", ui.Selectable)
-	ui.Text2("teп-ttdsdp-211", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
+
 	//ui.TextInput2("tirey21", 100, 150, &msg1)
 	//	ui.Image("-iyрпен66g", 100, 100, tex2.TextureId, tex2.TexCoords)
 	//	ui.TreeNode("treesds1yuy2", "Настройки", func() {
@@ -278,14 +282,32 @@ func firstWindow() {
 	//	//ui.Image(fmt.Sprint(12)+"-imgy5g", 100, 100, tex.TextureId, tex.TexCoords)
 	//	ui.Text(fmt.Sprint(2131)+"-txt", "dfdgfg - это текст-\"рыба\"", ui.Selectable)
 	//})
-	//for i := 0; i < 1000; i++ {
+	//for i := 0; i < 100; i++ {
 	//	//	//fmt.Println(tex.TexCoords)
-	//	//if ui.Image("-iyimgy5g", 100, 100, tex.TextureId, tex.TexCoords) {
-	//	//	sh = !sh
-	//	//}
-	//	ui.Text("h787-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
+	//	if ui.Image("-iyimgy5g", 100, 100, tex.TextureId, tex.TexCoords) {
+	//		sh = !sh
+	//	}
+	//	//ui.Text2("teп-ttdsdp-211", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
+	//	//ui.Text("h787-txt", "Lorem Ipsum - это текст-\"рыба\"", ui.Selectable)
 	//}
-	//ui.Slider("slds", &tW, 100, 1200)
+	ui.TextButton("dsd", "Hello")
+	ui.Slider("slds", &tW, 100, 1200)
+	ui.Text("teп-ttdsdp-1", fmt.Sprintf("%.0f", tW), ui.Selectable)
+	ui.TreeNode("node1", "The first", func() {
+		ui.Row("roe23", widgets.NoAlign, func() {
+			ui.Text("#eывr", "the quick", ui.Selectable)
+			ui.Column("colfdfdвава", func() {
+				ui.Button("ASsfdffb")
+				ui.Button("ASsfdffbbb")
+				ui.Slider("slider-1", &slCounter, 0, 255)
+			})
+		})
+
+	})
+
+	ui.TextFitted("fidfd", tW, "Hello, sailor!")
+	ui.TextInput("dsdsd", 400, 400, &message)
+
 	//elapsed := time.Since(start)
 	//dur += elapsed.Microseconds()
 	//counter++

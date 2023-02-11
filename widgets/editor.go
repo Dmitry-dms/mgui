@@ -1,7 +1,6 @@
 package widgets
 
 import (
-	"fmt"
 	"github.com/Dmitry-dms/mgui/fonts"
 	"github.com/Dmitry-dms/mgui/utils"
 	"strings"
@@ -39,7 +38,7 @@ func newBuffer(initCap int) *Buffer {
 }
 
 func (b *Buffer) replace(msg string) {
-	b.Data = b.Data[:]
+	b.Data = b.Data[:0]
 	b.Data = append(b.Data, []rune(msg)...)
 }
 
@@ -153,9 +152,12 @@ func (e *Editor) Backspace() {
 	e.retokenize()
 }
 
-func (e *Editor) ReplaceBuffer(msg string) {
+func (e *Editor) ReplaceBuffer(msg string) (width, height float32) {
 	e.Buff.replace(msg)
 	e.retokenize()
+	width = e.TextWidth
+	height = e.TextHeight
+	return
 }
 
 func (e *Editor) Delete() {
@@ -194,13 +196,12 @@ func (e *Editor) InsertText(txt string) {
 }
 
 func (e *Editor) retokenize() {
-	//fmt.Println("retoken")
 	e.linesCount = 1
 
 	fontSize := e.font.XHeight() * e.Scale
 	var line Line
 	line.Begin = 0
-	lines := []Line{} //e.Lines[:]
+	lines := e.Lines[:0]
 	var boundWidth, boundHeight float32
 	var maxDescend, baseline, maxWidth float32
 	baseline = fontSize
@@ -211,7 +212,7 @@ func (e *Editor) retokenize() {
 		line.Ypos = ypos
 		line.Height = fontSize
 	}
-	chars := []Character{} //e.CharsInfo[:]
+	chars := e.CharsInfo[:0]
 	var char Character
 
 	srcString := e.Buff.Data
@@ -290,8 +291,6 @@ func (e *Editor) retokenize() {
 	e.TextWidth = maxWidth
 	e.TextHeight = boundHeight
 	e.CharsInfo = chars
-	fmt.Println(e.Lines)
-	//fmt.Println(e.TextWidth, e.TextHeight)
 }
 
 func (e *Editor) cursorRow() int {
