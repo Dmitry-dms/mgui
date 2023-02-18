@@ -4,8 +4,6 @@ import (
 	"github.com/Dmitry-dms/mgui/cache"
 	"github.com/Dmitry-dms/mgui/draw"
 	"github.com/Dmitry-dms/mgui/fonts"
-	"image"
-
 	"github.com/Dmitry-dms/mgui/styles"
 	"github.com/Dmitry-dms/mgui/utils"
 	"github.com/Dmitry-dms/mgui/widgets"
@@ -113,11 +111,15 @@ func NewContext(frontRenderer UiRenderer) *UiContext {
 	return &c
 }
 
-func UploadFont(path string, size int, dpi float32, from int, to int) (*fonts.Font, *image.RGBA) {
+//func UploadFont(path string, size int, dpi float32, from int, to int) (*fonts.Font, *image.RGBA) {
+//	c := ctx()
+//	f, data := fonts.NewFont(path, size, dpi, from, to)
+//	c.font = f
+//	return f, data
+//}
+func AddFont(font *fonts.Font) {
 	c := ctx()
-	f, data := fonts.NewFont(path, size, dpi, from, to)
-	c.font = f
-	return f, data
+	c.font = font
 }
 
 func AddRenderer(frontRenderer UiRenderer) {

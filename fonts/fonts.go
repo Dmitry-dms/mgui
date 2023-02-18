@@ -1,12 +1,13 @@
 package fonts
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/Dmitry-dms/mgui/utils"
 	"image"
 	"image/color"
 	"image/draw"
-
+	"os"
 	// "image/png"
 	"io/ioutil"
 	// "os"
@@ -29,16 +30,35 @@ type Font struct {
 	CharSlice []*CharInfo
 	TextureId uint32
 	Face      font.Face
+	Image     *image.RGBA
 }
 
-func NewFont(filepath string, fontSize int, dpi float32, from, to int) (*Font, *image.RGBA) {
+func NewFont(filepath string, fontSize int, dpi float32, from, to int) *Font {
 	f := Font{
 		Filepath: filepath,
 		FontSize: fontSize,
 		CharMap:  make(map[int]*CharInfo, 50),
 	}
 	data := f.generateBitmap(dpi, from, to)
-	return &f, data
+	f.Image = data
+	return &f
+}
+
+// TODO(@Dmitry-dms): Is ptrToStruct can map to JSON, add a check method via reflecton
+func (f *Font) ReadInfoJson(filepath string, ptrToStruct any) error {
+	fil, err := os.OpenFile(filepath, os.O_RDONLY, 0664)
+	if err != nil {
+		return err
+	}
+	defer fil.Close()
+
+	dec := json.NewDecoder(fil)
+	err = dec.Decode(&ptrToStruct)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 var AtlasWidth = 1024
