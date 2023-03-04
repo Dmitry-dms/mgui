@@ -205,7 +205,7 @@ func (e *Editor) retokenize() {
 	var boundWidth, boundHeight float32
 	var maxDescend, baseline, maxWidth float32
 	baseline = fontSize
-	boundHeight = e.Scale * fontSize
+	boundHeight = fontSize
 	var dx, ypos float32 = 0, 0
 	{
 		line.Xpos = 0

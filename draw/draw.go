@@ -66,7 +66,13 @@ func (c *CmdBuffer) Clear() {
 	c.lastElems = 0
 }
 
-func (c *CmdBuffer) SeparateBuffer(texId uint32, clip ClipRectCompose) {
+type CallInfo struct {
+	Type string
+}
+
+var EmptyCallInfo = CallInfo{}
+
+func (c *CmdBuffer) SeparateBuffer(texId uint32, clip ClipRectCompose, info CallInfo) {
 	mainRect := clip.MainClipRect
 	innerRect := clip.ClipRect
 
@@ -86,6 +92,7 @@ func (c *CmdBuffer) SeparateBuffer(texId uint32, clip ClipRectCompose) {
 		Elems:       c.VertCount - c.lastElems,
 		IndexOffset: c.ofs,
 		TexId:       texId,
+		Type:        info.Type,
 	}
 	if !useInnerClip {
 		inf.ClipRect = mainRect

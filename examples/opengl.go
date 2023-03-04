@@ -113,6 +113,11 @@ func (b *GLRender) Draw(displaySize [2]float32, buffer draw.CmdBuffer) {
 			gl.ActiveTexture(gl.TEXTURE0 + cmd.TexId)
 			gl.BindTexture(gl.TEXTURE_2D, cmd.TexId)
 			b.shaderProgram.UploadTexture("Texture", int32(cmd.TexId))
+			if cmd.Type == "msdf" {
+				b.shaderProgram.UploadInt("textureType", 1)
+			} else {
+				b.shaderProgram.UploadInt("textureType", 0)
+			}
 		}
 		gl.Scissor(x, y, w, h)
 		if cmd.Type == "LINE_STRIP" {

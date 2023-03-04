@@ -7,3 +7,7 @@ how to use:
 2) write in cmd: ./msdf-atlas-gen.exe -font <fontfile.ttf/otf> -size <size> -charset <charset.txt> -json <filename.json>
 3) write in cmd: ./msdf-atlas-gen.exe -font <fontfile.ttf/otf> -size <size> -charset <charset.txt> -imageout <filename.*>
 options in 2 and 3 must be the same .
+
+
+./msdf-atlas-gen.exe -font C:/Windows/Fonts/times.ttf  -size 40 -charset charset.txt -json ../../test.json
+./msdf-atlas-gen.exe -font C:/Windows/Fonts/times.ttf  -size 40 -charset charset.txt -imageout ../../test.png

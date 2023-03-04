@@ -1,7 +1,6 @@
 package widgets
 
 import (
-	"github.com/Dmitry-dms/mgui/fonts"
 	"github.com/Dmitry-dms/mgui/styles"
 )
 
@@ -23,25 +22,25 @@ const (
 )
 
 // NewTextButton TODO(@Dmitry-dms): Should TextButton exist or just use Text and Button together when needed?
-func NewTextButton(id string, x, y, w, h float32,
-	text string, tPos []fonts.CombinedCharInfo, align TextAlign, pad PaddingType, style *styles.Style) *TextButton {
-	tb := TextButton{
-		Id:    id,
-		align: align,
-		style: style,
-		pad:   pad,
-	}
-	txt := NewText("", text, x, y, w, h, tPos, nil, style, Default)
-
-	btn := NewButton("", x, y, 2*style.AllPadding+w, 2*style.AllPadding+h, style.BtnColor)
-
-	tb.Button = btn
-	tb.Text = txt
-
-	tb.UpdateTextPos(tb.Button.BoundingBox()[0], tb.Button.BoundingBox()[1])
-
-	return &tb
-}
+//func NewTextButton(id string, x, y, w, h float32,
+//	text string, tPos []fonts.CombinedCharInfo, align TextAlign, pad PaddingType, style *styles.Style) *TextButton {
+//	tb := TextButton{
+//		Id:    id,
+//		align: align,
+//		style: style,
+//		pad:   pad,
+//	}
+//	txt := NewText("", text, x, y, w, h, tPos, nil, style, Default)
+//
+//	btn := NewButton("", x, y, 2*style.AllPadding+w, 2*style.AllPadding+h, style.BtnColor)
+//
+//	tb.Button = btn
+//	tb.Text = txt
+//
+//	tb.UpdateTextPos(tb.Button.BoundingBox()[0], tb.Button.BoundingBox()[1])
+//
+//	return &tb
+//}
 func (tb *TextButton) ToggleUpdate() {
 	tb.Text.ToggleUpdate()
 	tb.Button.ToggleUpdate()

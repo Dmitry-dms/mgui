@@ -31,6 +31,7 @@ type Font struct {
 	TextureId uint32
 	Face      font.Face
 	Image     *image.RGBA
+	Type      string
 }
 
 func NewFont(filepath string, fontSize int, dpi float32, from, to int) *Font {
