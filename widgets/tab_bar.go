@@ -2,9 +2,10 @@ package widgets
 
 type TabBar struct {
 	baseWidget
-	Bars       []*TabItem
-	CurrentTab int
-	BarHeight  float32
+	Bars          []*TabItem
+	CurrentTab    int
+	ContentHeight float32
+	BarsHeight    float32
 
 	CursorX float32
 }
@@ -54,7 +55,7 @@ func (t *TabBar) ChangeActive(b *TabItem) {
 	}
 }
 func (t *TabBar) SetHeight(h float32) {
-	//if h > t.Height() {
+	//if h > t.ContentHeight() {
 	t.boundingBox[3] = h
 	//}
 }

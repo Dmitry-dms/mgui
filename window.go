@@ -197,7 +197,7 @@ func BeginCustomWindow(id string, x, y, w, h, wsX, wsY, wsW, wsH float32, texId 
 	//// Maybe in future I will change text selection algorithm and rework this.
 	//for _, region := range wnd.textRegions {
 	//	b := region.Min
-	//	wnd.buffer.CreateRect(b.X, b.Y, region.Width(), region.Height(), 0, draw.StraightCorners, 0,
+	//	wnd.buffer.CreateRect(b.X, b.Y, region.Width(), region.ContentHeight(), 0, draw.StraightCorners, 0,
 	//		softGreen, wnd.DefaultClip())
 	//}
 
@@ -344,10 +344,10 @@ func BeginWindow(windowName string, opened *bool) {
 
 		//txt, _, _, _, out := c.TextEX(wnd.mainWidgetSpace, windowName+"-txt", windowName, 0, DefaultTextFlag)
 		//if out { // Prevent cursor changing because we draw it outside main widget space
-		//	wnd.mainWidgetSpace.addCursor(-txt.Width(), -txt.Height())
-		//	wnd.mainWidgetSpace.AddVirtualWH(-txt.Width(), -txt.Height())
+		//	wnd.mainWidgetSpace.addCursor(-txt.Width(), -txt.ContentHeight())
+		//	wnd.mainWidgetSpace.AddVirtualWH(-txt.Width(), -txt.ContentHeight())
 		//}
-		//txt.UpdatePosition([4]float32{wnd.x, wnd.y, txt.Width(), txt.Height()})
+		//txt.UpdatePosition([4]float32{wnd.x, wnd.y, txt.Width(), txt.ContentHeight()})
 		//c.DrawText(wnd.x, wnd.y, txt, c.font.TextureId, wnd.buffer, draw.NewClip(draw.EmptyClip, [4]float32{wnd.x, wnd.y, wnd.w, wnd.h}))
 	}
 
@@ -419,23 +419,16 @@ func (c *UiContext) getWidget(id string, f func() widgets.Widget) widgets.Widget
 //
 //}
 
-func TextButton(id string, msg string) bool {
-	c := ctx()
-	wnd, ws := c.IsWidgetSpaceAvailable()
-	if ws == nil {
-		fmt.Println("Can't find any widget spaces")
-		return false
-	}
-	txt, _, _, isRow, out := c.TextEX(ws, id+"-text", msg, 0, DefaultTextFlag)
+func (c *UiContext) TextButtonEX(wnd *Window, ws *WidgetSpace, id string, msg string) (btn *widgets.Button, txt *widgets.Text, x, y float32, isRow, out, clicked, hovered bool) {
+	txt, _, _, isRow, out = c.TextEX(ws, id+"-text", msg, 0, DefaultTextFlag)
 	if out {
 		ws.addCursor(-txt.Width(), -txt.Height())
 		ws.AddVirtualWH(-txt.Width(), -txt.Height())
 	}
 	padding := c.CurrentStyle.Padding
-	var clicked, hovered bool
-	btn, x, y, isRow, out := c.ButtonEX(ws, id+"-btn", txt.Width()+padding.WidthSum(), txt.Height()+padding.HeightSum())
+	btn, x, y, isRow, out = c.ButtonEX(ws, id+"-btn", txt.Width()+padding.WidthSum(), txt.Height()+padding.HeightSum())
 	if out {
-		return false
+		return
 	}
 	hovered = IsHovered(wnd, ws, btn)
 	clicked = hovered && c.io.MouseClicked[0]
@@ -449,6 +442,19 @@ func TextButton(id string, msg string) bool {
 	} else {
 		btn.SetColor(c.CurrentStyle.BtnColor)
 	}
+	return
+}
+
+func TextButton(id string, msg string) bool {
+	c := ctx()
+	wnd, ws := c.IsWidgetSpaceAvailable()
+	if ws == nil {
+		fmt.Println("Can't find any widget spaces")
+		return false
+	}
+	btn, txt, x, y, isRow, _, clicked, _ := c.TextButtonEX(wnd, ws, id, msg)
+	padding := c.CurrentStyle.Padding
+
 	clip, buffer := ws.UpdateWidgetPosition(x, y, isRow, wnd, btn)
 	c.DrawButton(x, y, btn, buffer, clip)
 
@@ -791,7 +797,7 @@ func TextInput(id string, w, h float32, message *string) {
 		//pos := c.io.MouseClickedPos[0]
 		//startFounded := false
 		//for _, line := range txt.Lines {
-		//	if pos.Y > line.StartY+y && pos.Y <= line.StartY+y+line.Height && !startFounded {
+		//	if pos.Y > line.StartY+y && pos.Y <= line.StartY+y+line.ContentHeight && !startFounded {
 		//		startFounded = true
 		//		txt.CursorInd = len(line.Text)
 		//	}
@@ -847,7 +853,7 @@ func TextInput(id string, w, h float32, message *string) {
 //		pos := c.io.MouseClickedPos[0]
 //		startFounded := false
 //		for _, line := range txt.Lines {
-//			if pos.Y > line.StartY+y && pos.Y <= line.StartY+y+line.Height && !startFounded {
+//			if pos.Y > line.StartY+y && pos.Y <= line.StartY+y+line.ContentHeight && !startFounded {
 //				startFounded = true
 //				txt.CursorInd = len(line.Text)
 //			}
@@ -1133,6 +1139,7 @@ func (c *UiContext) DrawText(x, y float32, txt *widgets.Text, texid uint32, buff
 	} else {
 		buffer.SendToBuffer(txt.Vertices, txt.Indices, txt.VertCount, txt.LastBufferIndex)
 	}
+	// TODO(@Dmitry-dms): Is there a way to place all text widgets on screen in 1 draw call? However, we may lose the ability to trim the text within the boundaries.
 	buffer.SeparateBuffer(texid, clip, draw.CallInfo{Type: c.font.Type})
 }
 func (ws *WidgetSpace) UpdateWidgetPosition(xPos, yPos float32, isRow bool, wnd *Window, w widgets.Widget) (clip draw.ClipRectCompose, buffer *draw.CmdBuffer) {
@@ -1160,7 +1167,7 @@ func (wnd *Window) endWidget(xPos, yPos float32, isRow bool, w widgets.Widget) d
 		wnd.currentWidgetSpace.AddVirtualWH(w.Width(), w.Height())
 	}
 
-	//wnd.debugDraw(xPos, yPos, w.Width(), w.Height())
+	//wnd.debugDraw(xPos, yPos, w.Width(), w.ContentHeight())
 
 	var clip draw.ClipRectCompose
 	if wnd.currentWidgetSpace.flags&IgnoreClipping != 0 {
@@ -1391,7 +1398,7 @@ func Selection(id string, index *int, data []string, texId uint32, texCoords [4]
 			DrawRect(wnd.buffer, id+"sel-rect", originX, originY, s.Width(), s.Height(), whiteColor)
 			wnd.buffer.SeparateBuffer(0, wnd.DefaultClip(), draw.EmptyCallInfo)
 			wnd.endWidget(originX, originY, isRow, s)
-			//img, _, clicked := c.imageHelper(id+"arrow", x2, y2, s.Height(), s.Height(), func() *widgets.Image {
+			//img, _, clicked := c.imageHelper(id+"arrow", x2, y2, s.ContentHeight(), s.ContentHeight(), func() *widgets.Image {
 			//	return nil
 			//})
 			//
@@ -1401,9 +1408,9 @@ func Selection(id string, index *int, data []string, texId uint32, texCoords [4]
 			txt.UpdatePosition([4]float32{originX, originY, txt.Width(), txt.Height()})
 			c.DrawText(originX, originY, txt, c.font.TextureId, wnd.buffer, wnd.DefaultClip())
 			//txt, _ := c.textHelper(data[*index]+"--"+id, x, y, 0, data[*index], widgets.Default)
-			//wnd.buffer.CreateText(x+c.CurrentStyle.AllPadding, y+(s.Height()-txt.Height())/2, txt,
-			//	*c.font, draw.NewClip(draw.EmptyClip, [4]float32{x, y, s.Width(), s.Height()}))
-			//wnd.buffer.CreateTexturedRect(x2-s.Height(), y2, img.Width(), img.Height(), texId, texCoords, img.Color(), wnd.DefaultClip())
+			//wnd.buffer.CreateText(x+c.CurrentStyle.AllPadding, y+(s.ContentHeight()-txt.ContentHeight())/2, txt,
+			//	*c.font, draw.NewClip(draw.EmptyClip, [4]float32{x, y, s.Width(), s.ContentHeight()}))
+			//wnd.buffer.CreateTexturedRect(x2-s.ContentHeight(), y2, img.Width(), img.ContentHeight(), texId, texCoords, img.Color(), wnd.DefaultClip())
 			if clicked {
 				fmt.Println("clcd")
 				s.Opened = true
@@ -1448,8 +1455,8 @@ func Selection(id string, index *int, data []string, texId uint32, texCoords [4]
 //		f := func() {
 //			ws.ClipRect = [4]float32{ws.X, ws.Y, ws.W, ws.H}
 //			clip := draw.NewClip(draw.EmptyClip, ws.ClipRect)
-//			wnd.buffer.CreateRect(bb[0], bb[1]+widg.Height(), ws.W, ws.H, 0, draw.StraightCorners, 0, black, clip)
-//			c.subWidgetSpaceHelper(wnd, wnd.buffer, id, bb[0], bb[1]+widg.Height(), widg.Width(), 0, Resizable|FitWidth|flag, widgFunc)
+//			wnd.buffer.CreateRect(bb[0], bb[1]+widg.ContentHeight(), ws.W, ws.H, 0, draw.StraightCorners, 0, black, clip)
+//			c.subWidgetSpaceHelper(wnd, wnd.buffer, id, bb[0], bb[1]+widg.ContentHeight(), widg.Width(), 0, Resizable|FitWidth|flag, widgFunc)
 //		}
 //		wnd.addDelayedWidget(f)
 //	}
@@ -1582,13 +1589,14 @@ func (c *UiContext) subWidgetSpaceHelperEx(wnd *Window, buff *draw.CmdBuffer, id
 	// TODO(@Dmitry-dms): Should each widget space have its own LastVertices,LastIndices etc... for drawing a scrollbar.
 	// Now, global buffer handle it, so it redraws every frame if needed. If it would be a window buffer
 	// we should handle its vertices carefully, because it breaks all widgets inside the window.
-	ws.widgetSpaceLogic(hoveredWs, actWind, scrollable, buff, func() draw.ClipRectCompose {
+	widg := ws.widgetSpaceLogic(hoveredWs, actWind, scrollable, buff, func() draw.ClipRectCompose {
 		cl := [4]float32{ws.X, ws.Y, ws.W, ws.H}
 		if outOfWindow {
 			cl[1] = wnd.mainWidgetSpace.Y
 		}
 		return draw.NewClip(cl, wnd.mainWidgetSpace.ClipRect)
 	})
+	wnd.addDelayedWidget(widg)
 
 	if flags&FillBackground != 0 {
 		if texId == 0 {
@@ -1633,14 +1641,19 @@ func (c *UiContext) subWidgetSpaceHelper(wnd *Window, buff *draw.CmdBuffer, id s
 
 func SubWidgetSpace(id string, width, height float32, flags WidgetSpaceFlag, widgFunc func()) {
 	c := ctx()
-	wnd := c.windowStack.Peek()
-	var ws *WidgetSpace
 
-	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
-	ws = c.subWidgetSpaceHelper(wnd, wnd.buffer, id, x, y, width, height, flags, widgFunc)
+	wnd, ws := c.IsWidgetSpaceAvailable()
+	if ws == nil {
+		fmt.Println("Can't find any widget spaces")
+		return
+	}
 
-	wnd.currentWidgetSpace.AddVirtualHeight(ws.H)
-	wnd.addCursor(ws.W, ws.H)
+	x, y, _, _ := CalculateWidgetInfo(width, height, ws)
+
+	childWs := c.subWidgetSpaceHelper(wnd, wnd.buffer, id, x, y, width, height, flags, widgFunc)
+
+	ws.addCursor(childWs.W, childWs.H)
+	ws.AddVirtualWH(childWs.W, childWs.H)
 }
 
 func TabItem(name string, widgFunc func()) {
@@ -1664,83 +1677,102 @@ func TabItem(name string, widgFunc func()) {
 		tb.SetWidth(ws.W)
 	}
 }
-func TabBar(id string, widgFunc func()) {
-	c := ctx()
-	wnd := c.windowStack.Peek()
-	var tab *widgets.TabBar
-	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
 
+func (c *UiContext) TabBarEX(ws *WidgetSpace, id string, width, height float32) (tab *widgets.TabBar, x, y float32, isRow, outOfWs bool) {
 	tab = c.getWidget(id, func() widgets.Widget {
-		return widgets.NewTabBar(id, x, y, 0, 0)
+		return widgets.NewTabBar(id, ws.cursorX, ws.cursorY, width, height)
 	}).(*widgets.TabBar)
 
+	x, y, isRow, outOfWs = c.WidgetEX(ws, tab.Width(), tab.Height())
+
+	return
+}
+
+func TabBar(id string, width, height float32, widgFunc func()) {
+	c := ctx()
+
+	wnd, ws := c.IsWidgetSpaceAvailable()
+	if ws == nil {
+		fmt.Println("Can't find any widget spaces")
+		return
+	}
+
+	tab, x, y, _, out := c.TabBarEX(ws, id+"-tabbar", width, height)
+	if out {
+		return
+	}
+
 	var rowHeight, rowWidth float32
-	ws := c.subWidgetSpaceHelper(wnd, wnd.buffer, id, x, y, 0, 0, Resizable|NotScrollable, func() {
-		//cr := wnd.currentWidgetSpace
-		//wnd.buffer.CreateRect(cr.X, cr.Y, cr.W, cr.H, 10, draw.AllRounded, 0, softGreen, wnd.DefaultClip())
-		//Row("rowds", func() {
-		//	row, _ := wnd.currentWidgetSpace.getCurrentRow()
-		//	//wnd.buffer.CreateRect(row.X, row.Y, row.Width(), row.Height(), 10, draw.AllRounded, 0, transparent, wnd.DefaultClip())
-		//	for i, item := range tab.Bars {
-		//		x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
-		//		tbtn, hovered, clicked := c.textButton(fmt.Sprint(id, "-", i), wnd, item.Name, x, y, widgets.Center)
-		//		if clicked {
-		//			tab.CurrentTab = i
-		//		}
-		//		if hovered {
-		//			tbtn.SetBackgroundColor(c.CurrentStyle.TabBtnActiveColor)
-		//			if clicked {
-		//				tab.ChangeActive(item)
-		//			}
-		//		} else if item.Active {
-		//			tbtn.SetBackgroundColor(c.CurrentStyle.TabBtnActiveColor)
-		//		} else {
-		//			tbtn.SetBackgroundColor(c.CurrentStyle.TabBtnColor)
-		//		}
-		//
-		//		tbtn.Text.CurrentColor = whiteColor
-		//		tbtn.SetHeight(tbtn.Height() - (tbtn.Height() - tbtn.Text.Height()) + c.CurrentStyle.AllPadding)
-		//		clip := wnd.endWidget(x, y, false, tbtn)
-		//		//wnd.buffer.CreateRect(x, y, tbtn.Width(), tbtn.Height(), 10, draw.TopRect, 0, tbtn.Color(), clip)
-		//		//wnd.buffer.CreateRect(x, y, tbtn.Width(), tbtn.Height(), 10, draw.TopRect, 0, tbtn.Color(), clip)
-		//		wnd.buffer.SeparateBuffer(0, clip)
-		//		wnd.buffer.CreateText(tbtn.Text.BoundingBox()[0], tbtn.Text.BoundingBox()[1], tbtn.Text, *c.font, clip)
-		//
-		//		row, _ := wnd.currentWidgetSpace.getCurrentRow()
-		//		if i != len(tab.Bars)-1 {
-		//			row.CursorX += 10
-		//			row.W += 10
-		//		}
-		//		if row.Height() > rowHeight {
-		//			rowHeight = row.Height()
-		//		}
-		//		rowWidth = row.Width()
-		//	}
-		//})
+	childWs := c.subWidgetSpaceHelper(wnd, wnd.buffer, id, x, y, 0, 0, Resizable|NotScrollable, func() {
+		DrawRect(wnd.buffer, id+"background", x, y, tab.Width(), tab.Height(), softGreen)
+		cr := wnd.currentWidgetSpace
+		Row("t4trgrg", widgets.NoAlign, func() {
 
-		//wnd.buffer.CreateRect(wnd.x, y+rowHeight, wnd.w, 2, 0, draw.StraightCorners, 0, c.CurrentStyle.TabBtnActiveColor, draw.NewClip(draw.EmptyClip, wnd.mainWidgetSpace.ClipRect))
-		wnd.buffer.SeparateBuffer(0, draw.NewClip(draw.EmptyClip, wnd.mainWidgetSpace.ClipRect), draw.EmptyCallInfo)
-		wnd.currentWidgetSpace.cursorY += 5
+			for i, item := range tab.Bars {
+				x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
+				btn, txt, _, _, isRow, _, clicked, hovered := c.TextButtonEX(wnd, cr, item.Name, item.Name)
+				if clicked {
+					tab.CurrentTab = i
+				}
+				if hovered {
+					btn.SetColor(c.CurrentStyle.TabBtnActiveColor)
+					if clicked {
+						tab.ChangeActive(item)
+					}
+				} else if item.Active {
+					btn.SetColor(c.CurrentStyle.TabBtnActiveColor)
+				} else {
+					btn.SetColor(c.CurrentStyle.TabBtnColor)
+				}
 
-		tab.BarHeight = rowHeight
-		tab.SetWidth(rowWidth)
-		wnd.currentWidgetSpace.tabStack.Push(tab)
+				txt.SetTextColor(whiteColor)
+				btn.SetHeight(btn.Height() - (btn.Height() - txt.Height()) + c.CurrentStyle.AllPadding)
+				DrawRect(wnd.buffer, item.Name+"bar", x, y, btn.Width(), btn.Height(), btn.Color())
+
+				clip, buffer := cr.UpdateWidgetPosition(x, y, isRow, wnd, btn)
+
+				txt.UpdatePosition([4]float32{x, y, txt.Width(), txt.Height()})
+				c.DrawText(x, y, txt, c.font.TextureId, buffer, clip)
+
+				row, _ := cr.getCurrentRow()
+				if i != len(tab.Bars)-1 {
+					row.CursorX += 10
+					row.W += 10
+				}
+				if row.Height() > rowHeight {
+					rowHeight = row.Height()
+				}
+				rowWidth = row.Width()
+			}
+		})
+
+		cr.cursorY += 5 // TODO: remove this
+
+		tab.BarsHeight = rowHeight
+
+		cr.tabStack.Push(tab)
 		widgFunc()
-		wnd.currentWidgetSpace.tabStack.Pop()
+		cr.tabStack.Pop()
 	})
-	ws.W = tab.Width()
-	ws.H = tab.Height() + tab.BarHeight + 5
+	tab.SetWidth(rowWidth)
+	tab.SetHeight(tab.Height() + tab.BarsHeight + 5)
 
-	//wnd.buffer.CreateRect(wnd.mainWidgetSpace.X, ws.H+y, wnd.w, 2,
-	//	0, draw.StraightCorners, 0, c.CurrentStyle.WidgSpaceDividerColor, wnd.DefaultClip())
+	childWs.W = tab.Width()
+	childWs.H = tab.Height()
 
-	wnd.addCursor(ws.W, ws.H)
-	wnd.currentWidgetSpace.AddVirtualWH(ws.W, ws.H)
+	wnd.addCursor(childWs.W, childWs.H)
+	wnd.currentWidgetSpace.AddVirtualWH(childWs.W, childWs.H)
 }
 
 func Row(id string, align widgets.RowAlign, widgFunc func()) {
 	c := ctx()
-	wnd := c.windowStack.Peek()
+
+	wnd, ws := c.IsWidgetSpaceAvailable()
+	if ws == nil {
+		fmt.Println("Can't find any widget spaces")
+		return
+	}
+
 	var row *widgets.HybridLayout
 	x, y, _ := wnd.currentWidgetSpace.getCursorPosition()
 	// Need to return cursor back, because internal row cursor shouldn't know anything about outer
@@ -1894,7 +1926,7 @@ func EndWindow() {
 	for _, f := range wnd.delayedWidgets {
 		f()
 	}
-	wnd.delayedWidgets = []func(){}
+	wnd.delayedWidgets = wnd.delayedWidgets[:0]
 
 	wnd.VisibleTexts = wnd.VisibleTexts[:0]
 

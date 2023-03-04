@@ -78,8 +78,7 @@ type UiContext struct {
 	//fonts
 	font *fonts.Font
 
-	globalBuffer   *draw.CmdBuffer
-	delayedWidgets []func()
+	globalBuffer *draw.CmdBuffer
 }
 
 const (
@@ -333,10 +332,6 @@ func EndFrame(size [2]float32) {
 	//if len(c.sortedWindows) == 0 {
 	//	return
 	//}
-
-	for _, widget := range c.delayedWidgets {
-		widget()
-	}
 
 	for _, v := range c.sortedWindows {
 		c.renderer.Draw(size, *v.buffer)

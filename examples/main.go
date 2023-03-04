@@ -391,9 +391,37 @@ func firstWindow() {
 		})
 
 	})
-	if ui.Image("-iyimgy5g", 100, 100, tex.TextureId, tex.TexCoords) {
-		sh = !sh
-	}
+	ui.TabBar("bar1", 400, 700, func() {
+		ui.TabItem("Config", func() {
+			ui.Button("fdffdf")
+			//uiCtx.PushStyleVar4f(ui.ButtonHoveredColor, [4]float32{100, 140, 76, 1})
+			ui.Button("fgfdffdf")
+			//uiCtx.PopStyleVar()
+			ui.Text("textre-ttp-2", "Hello World", ui.DefaultTextFlag)
+			ui.Text("textrt-ttp-3", "Привет, мир!?", ui.DefaultTextFlag)
+		})
+		ui.TabItem("Config 2", func() {
+			ui.SubWidgetSpace("widhswedf-1", 100, 200, ui.NotResizable|ui.Scrollable|ui.ShowScrollbar, func() {
+				ui.Image("#im4kjdg464tht", 100, 100, tex.TextureId, tex.TexCoords)
+				ui.Image("#im76erewr", 100, 100, tex2.TextureId, tex2.TexCoords)
+				ui.Text("#t3df", "world!", ui.DefaultTextFlag)
+			})
+		})
+		ui.TabItem("Config 3", func() {
+			ui.Button("fdf43we43545fdf")
+			ui.Text("te45xtweаа", "Очень важная опция - ?", ui.DefaultTextFlag)
+			ui.VSpace("#hhvswe1")
+			ui.Text("text23wertа", "2+2=4", ui.DefaultTextFlag)
+			ui.Image("#iваmgwwej4", 100, 100, tex2.TextureId, tex2.TexCoords)
+		})
+	})
+	//if ui.Image("-iyimgy5g", 100, 100, tex.TextureId, tex.TexCoords) {
+	//	sh = !sh
+	//}
+	//ui.SubWidgetSpace("dsd", 200, 100, ui.NotResizable|ui.Scrollable|ui.ShowScrollbar, func() {
+	//	ui.Image("-iyi1331", 100, 200, tex.TextureId, tex.TexCoords)
+	//})
+	//ui.Text("#eыв13214r", "the quick", ui.Selectable)
 	//ui.TextFitted("fidfd", tW, "Hello, sailor!")
 	//ui.TextInput("dsdsd", 400, 400, &message)
 
