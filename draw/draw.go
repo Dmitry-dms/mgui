@@ -112,11 +112,6 @@ func (c *CmdBuffer) SeparateBuffer(texId uint32, clip ClipRectCompose, info Call
 	c.lastElems = c.VertCount
 }
 
-func (c *CmdBuffer) CreateButtonT(x, y float32, btn *widgets.TextButton, font fonts.Font, clip ClipRectCompose) {
-	//c.CreateRect(x, y, btn.Button.Width(), btn.Button.ContentHeight(), 0, StraightCorners, 0, btn.Color(), clip)
-	btn.UpdateTextPos(x, y)
-	//c.CreateText(btn.Text.BoundingBox()[0], btn.Text.BoundingBox()[1], btn.Text, font, clip)
-}
 func (c *CmdBuffer) CreateText(x, y float32, txt *widgets.Text, scale float32, font fonts.Font) ([]float32, []int32, int, int) {
 	vert, ind, count := c.text(txt, font, x, c.displaySize.Y-y, scale, txt.CurrentColor)
 	return vert, ind, count, c.LastInd

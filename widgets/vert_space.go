@@ -37,6 +37,6 @@ func (s *VSpace) Width() float32 {
 func (s *VSpace) Color() [4]float32 {
 	return s.BackgroundColor
 }
-func (s *VSpace) WidgetId() string {
+func (s *VSpace) Id() string {
 	return s.id
 }

@@ -42,7 +42,7 @@ func (b *Button) SetWidth(w float32) {
 func (b *Button) SetHeight(h float32) {
 	b.boundingBox[3] = h
 }
-func (b *Button) WidgetId() string {
+func (b *Button) Id() string {
 	return b.id
 }
 

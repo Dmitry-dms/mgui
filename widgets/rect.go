@@ -20,7 +20,7 @@ func NewRectangle(id string, x, y, w, h float32, clr [4]float32) *Rectangle {
 	return &r
 }
 
-func (r *Rectangle) WidgetId() string {
+func (r *Rectangle) Id() string {
 	return r.baseWidget.id
 }
 

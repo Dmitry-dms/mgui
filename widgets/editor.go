@@ -289,7 +289,7 @@ func (e *Editor) retokenize() {
 	e.Lines = lines
 	//boundHeight += maxDescend
 	e.TextWidth = maxWidth
-	e.TextHeight = boundHeight
+	e.TextHeight = boundHeight + maxDescend
 	e.CharsInfo = chars
 }
 

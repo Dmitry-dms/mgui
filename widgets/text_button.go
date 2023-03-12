@@ -5,7 +5,7 @@ import (
 )
 
 type TextButton struct {
-	Id    string
+	id    string
 	align TextAlign
 	pad   PaddingType
 	style *styles.Style
@@ -86,8 +86,8 @@ func (tb *TextButton) UpdatePosition(pos [4]float32) {
 	tb.Button.UpdatePosition(pos)
 	tb.UpdateTextPos(tb.Button.BoundingBox()[0], tb.Button.BoundingBox()[1])
 }
-func (tb *TextButton) WidgetId() string {
-	return tb.Id
+func (tb *TextButton) Id() string {
+	return tb.id
 }
 func (tb *TextButton) Height() float32 {
 	return tb.Button.Height()

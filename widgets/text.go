@@ -92,7 +92,7 @@ func (t *Text) GetBackgroundColor() [4]float32 {
 func (t *Text) Color() [4]float32 {
 	return t.CurrentColor
 }
-func (t *Text) WidgetId() string {
+func (t *Text) Id() string {
 	return t.id
 }
 

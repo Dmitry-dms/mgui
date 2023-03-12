@@ -18,7 +18,7 @@ type HybridLayout struct {
 	Padding     int
 	ItemSpacing int
 	style       *styles.Style
-	Id          string
+	id          string
 
 	Align RowAlign
 }
@@ -54,7 +54,7 @@ func NewHLayout(id string, x, y float32, a RowAlign, style *styles.Style) *Hybri
 		X:     x,
 		Y:     y,
 		style: style,
-		Id:    id,
+		id:    id,
 		Align: a,
 	}
 	return &r
@@ -66,8 +66,8 @@ func (r *HybridLayout) Height() float32 {
 func (r *HybridLayout) Width() float32 {
 	return r.LastWidth
 }
-func (r *HybridLayout) WidgetId() string {
-	return r.Id
+func (r *HybridLayout) Id() string {
+	return r.id
 }
 
 func (r *HybridLayout) UpdateHeight(h float32) {

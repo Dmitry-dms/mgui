@@ -1,7 +1,7 @@
 package widgets
 
 type Widget interface {
-	WidgetId() string
+	Id() string
 	UpdatePosition([4]float32)
 	Height() float32
 	Width() float32

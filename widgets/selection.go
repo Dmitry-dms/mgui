@@ -18,7 +18,7 @@ func NewSelection(id string, x, y, w, h float32) *Selection {
 	return &s
 }
 
-func (s *Selection) WidgetId() string {
+func (s *Selection) Id() string {
 	return s.id
 }
 

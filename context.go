@@ -373,7 +373,7 @@ func EndFrame(size [2]float32) {
 	//if c.FocusedTextInput != nil {
 	//	if utils.PointOutsideRect(c.io.MouseClickedPos[0], utils.NewRectS(c.FocusedTextInput.BoundingBox())) {
 	//		ToggleAllWidgets()
-	//		fmt.Println("outside - ", c.FocusedTextInput.WidgetId())
+	//		fmt.Println("outside - ", c.FocusedTextInput.Id())
 	//		c.FocusedTextInput = nil
 	//	}
 	//}

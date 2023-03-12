@@ -37,7 +37,7 @@ func (t *TabBar) FindTabItem(name, widgSpaceId string) (item *TabItem, index int
 	return
 }
 
-func (t *TabBar) WidgetId() string {
+func (t *TabBar) Id() string {
 	return t.id
 }
 

@@ -58,7 +58,7 @@ func (i *Image) UpdatePosition(pos [4]float32) {
 func (i *Image) Color() [4]float32 {
 	return i.BackgroundColor
 }
-func (i *Image) WidgetId() string {
+func (i *Image) Id() string {
 	return i.id
 }
 

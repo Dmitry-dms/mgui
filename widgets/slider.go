@@ -84,7 +84,7 @@ func (s *Slider) UpdatePosition(pos [4]float32) {
 	s.calculateSliderPos()
 }
 
-func (s *Slider) WidgetId() string {
+func (s *Slider) Id() string {
 	return s.id
 }
 

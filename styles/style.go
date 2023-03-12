@@ -70,10 +70,10 @@ var (
 		TabBtnActiveColor:     [4]float32{51, 105, 173, 1},
 		WidgSpaceDividerColor: [4]float32{70, 70, 79, 1},
 		Padding: Padding{
-			Left:   0,
-			Top:    0,
-			Right:  0,
-			Bottom: 0,
+			Left:   10,
+			Top:    10,
+			Right:  10,
+			Bottom: 10,
 		},
 	}
 )
